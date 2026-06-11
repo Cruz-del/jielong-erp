@@ -357,18 +357,7 @@
 
   <script>
     function handleLoginClick() {
-      if (window.parent && window.parent !== window) {
-        // 尝试多种方式通知父窗口
-        if (typeof window.parent.navigateTo === 'function') {
-          window.parent.navigateTo('pages/login.html');
-        } else if (typeof window.parent.loadPage === 'function') {
-          window.parent.loadPage('pages/login.html');
-        } else {
-          window.parent.postMessage({ type: 'navigate', page: 'pages/login.html' }, '*');
-        }
-      } else {
-        window.location.href = 'pages/login.html';
-      }
+      location.href = 'login.html';
     }
   </script>
 </body>
