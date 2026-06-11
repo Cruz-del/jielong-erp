@@ -526,7 +526,7 @@
   </div>
 
   <!-- 注册表单 -->
-  <div class="login-container" id="registerForm" style="display: none;">
+  <div class="login-container" id="registerForm" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; z-index: 1000;">
     <div class="logo-section">
       <div class="logo">JL</div>
       <p class="company-name">捷隆纺织</p>
@@ -537,37 +537,33 @@
       <i class="fas fa-exclamation-circle"></i> 注册失败
     </div>
 
-    <form id="registerFormData">
-      <div class="form-group">
-        <label class="form-label">姓名</label>
-        <input type="text" class="form-input" id="registerName" placeholder="请输入姓名">
+    <form id="registerFormData" style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px;font-size:13px;font-weight:600">姓名 <span style="color:#ef4444">*</span></label>
+        <input type="text" class="form-input" id="registerName" placeholder="请输入姓名" style="width:100%;height:46px;padding:0 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;box-sizing:border-box">
+      </div>
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px;font-size:13px;font-weight:600">邮箱 <span style="color:#ef4444">*</span></label>
+        <input type="email" class="form-input" id="registerEmail" placeholder="请输入邮箱" style="width:100%;height:46px;padding:0 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;box-sizing:border-box">
+      </div>
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px;font-size:13px;font-weight:600">手机号 <span style="color:#ef4444">*</span></label>
+        <input type="tel" class="form-input" id="registerPhone" placeholder="请输入11位手机号" required style="width:100%;height:46px;padding:0 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;box-sizing:border-box">
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px">一个手机号只能注册一次</div>
+      </div>
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px;font-size:13px;font-weight:600">密码 <span style="color:#ef4444">*</span></label>
+        <input type="password" class="form-input" id="registerPassword" placeholder="请输入6-20位密码" style="width:100%;height:46px;padding:0 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;box-sizing:border-box">
+      </div>
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px;font-size:13px;font-weight:600">确认密码 <span style="color:#ef4444">*</span></label>
+        <input type="password" class="form-input" id="registerConfirmPassword" placeholder="请再次输入密码" style="width:100%;height:46px;padding:0 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;box-sizing:border-box">
       </div>
 
-      <div class="form-group">
-        <label class="form-label">邮箱</label>
-        <input type="email" class="form-input" id="registerEmail" placeholder="请输入邮箱">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">手机号 <span style="color:#ef4444;">*</span></label>
-        <input type="tel" class="form-input" id="registerPhone" placeholder="请输入手机号（用于唯一识别）" required>
-        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">一个手机号只能注册一次</div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">密码</label>
-        <input type="password" class="form-input" id="registerPassword" placeholder="请输入密码（至少6位）">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">确认密码</label>
-        <input type="password" class="form-input" id="registerConfirmPassword" placeholder="请再次输入密码">
-      </div>
-
-      <button type="button" class="login-btn" onclick="handleRegister()">注册</button>
+      <button type="button" class="login-btn" onclick="handleRegister()" style="width:100%;height:48px;margin-top:4px">注册</button>
     </form>
 
-    <div class="register-link">
+    <div class="register-link" style="margin-top:16px">
       已有账号？<a href="#" onclick="showLogin()">立即登录</a>
     </div>
   </div>
