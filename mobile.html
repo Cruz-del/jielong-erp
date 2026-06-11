@@ -420,6 +420,20 @@
 
     // 页面初始化——先显示官网首页
     document.addEventListener('DOMContentLoaded', function() {
+      // 检查 URL hash 中的登录信息
+      var hash = location.hash;
+      if (hash.indexOf('loggedin=') >= 0) {
+        try {
+          var json = decodeURIComponent(hash.split('loggedin=')[1]);
+          var user = JSON.parse(json);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('loginTime', Date.now().toString());
+          // 清除 hash 避免重复登录
+          history.replaceState(null, '', location.pathname);
+        } catch(e) {}
+      }
+
       if (checkLoginStatus()) {
         buildMobileNav();
         document.getElementById('bottomNav').style.display = 'flex';
