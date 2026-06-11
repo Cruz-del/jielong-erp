@@ -463,10 +463,15 @@
       if (checkLoginStatus()) {
         buildMobileNav();
         document.getElementById('bottomNav').style.display = 'flex';
-        setTimeout(function() { document.getElementById('mainFrame').src = 'pages/dashboard.html'; currentPage='pages/dashboard.html'; }, 100);
+        document.getElementById('mainFrame').src = 'pages/dashboard.html';
+        currentPage = 'pages/dashboard.html';
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('mainFrame').style.display = 'block';
       } else {
+        // 强制显示登录框
         document.getElementById('loginSection').style.display = 'flex';
         document.getElementById('mainFrame').style.display = 'none';
+        document.getElementById('bottomNav').style.display = 'none';
       }
     });
     
