@@ -890,12 +890,6 @@
     });
   }
 
-  // 通知父窗口显示底部导航（登录后直接跳转时）
-  if (window.parent && window.parent !== window && window.parent.buildMobileNav) {
-    window.parent.buildMobileNav();
-    window.parent.document.getElementById('bottomNav').style.display = 'flex';
-  }
-
   document.addEventListener('DOMContentLoaded', function() {
     bindEvents();
     loadDashboardData();
