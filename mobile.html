@@ -418,29 +418,55 @@
       }).join('');
     }
 
-    // 页面初始化——先显示官网首页
-    document.addEventListener('DOMContentLoaded', function() {
-      // 检查 URL hash 中的登录信息
-      var hash = location.hash;
-      if (hash.indexOf('loggedin=') >= 0) {
-        try {
-          var json = decodeURIComponent(hash.split('loggedin=')[1]);
-          var user = JSON.parse(json);
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('loginTime', Date.now().toString());
-          // 清除 hash 避免重复登录
-          history.replaceState(null, '', location.pathname);
-        } catch(e) {}
+    // 移动端内嵌登录/注册
+    function mobileLogin() {
+      var u = document.getElementById('mUsername').value.trim();
+      var p = document.getElementById('mPassword').value.trim();
+      if (!u || !p) return;
+      var users = JSON.parse(localStorage.getItem('adminUsers')||'[]');
+      if (users.length===0) {
+        users=[{id:1,email:'admin@example.com',password:'123456',username:'Admin',role:'超级管理员'},{id:2,email:'staff@example.com',password:'123456',username:'Staff',role:'外贸业务员'}];
+        localStorage.setItem('adminUsers',JSON.stringify(users));
       }
+      var user = users.find(function(x){return x.email===u&&x.password===p});
+      if (!user) { document.getElementById('mLoginError').style.display='block'; document.getElementById('mLoginError').textContent='账号或密码错误'; return; }
+      var info = {id:user.id,email:user.email,username:user.username||u,role:user.role||'外贸业务员',lastLogin:new Date().toISOString()};
+      localStorage.setItem('currentUser',JSON.stringify(info));
+      localStorage.setItem('isLoggedIn','true');
+      localStorage.setItem('loginTime',Date.now().toString());
+      document.getElementById('loginSection').style.display='none';
+      buildMobileNav();
+      document.getElementById('bottomNav').style.display='flex';
+      document.getElementById('mainFrame').src = 'pages/dashboard.html'; currentPage='pages/dashboard.html';
+    }
+    function mobileRegister() {
+      var n=document.getElementById('mRegName').value.trim();
+      var e=document.getElementById('mRegEmail').value.trim();
+      var ph=document.getElementById('mRegPhone').value.trim();
+      var pw=document.getElementById('mRegPwd').value;
+      var pw2=document.getElementById('mRegPwd2').value;
+      if(!n||!e||!ph||!pw||!pw2){document.getElementById('mRegError').style.display='block';document.getElementById('mRegError').textContent='请填写所有字段';return;}
+      if(pw!==pw2){document.getElementById('mRegError').style.display='block';document.getElementById('mRegError').textContent='两次密码不一致';return;}
+      if(pw.length<6){document.getElementById('mRegError').style.display='block';document.getElementById('mRegError').textContent='密码至少6位';return;}
+      var users=JSON.parse(localStorage.getItem('adminUsers')||'[]');
+      if(users.find(function(x){return x.email===e})){document.getElementById('mRegError').style.display='block';document.getElementById('mRegError').textContent='该邮箱已注册';return;}
+      users.push({email:e,password:pw,username:n,phone:ph,role:'外贸业务员'});
+      localStorage.setItem('adminUsers',JSON.stringify(users));
+      alert('注册成功！请登录');
+      mobileShowLogin();
+    }
+    function mobileShowRegister() { document.getElementById('loginSection').style.display='none'; document.getElementById('registerSection').style.display='flex'; }
+    function mobileShowLogin() { document.getElementById('registerSection').style.display='none'; document.getElementById('loginSection').style.display='flex'; }
 
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
       if (checkLoginStatus()) {
         buildMobileNav();
         document.getElementById('bottomNav').style.display = 'flex';
-        setTimeout(function() { navigateTo('pages/dashboard.html'); }, 100);
+        setTimeout(function() { document.getElementById('mainFrame').src = 'pages/dashboard.html'; currentPage='pages/dashboard.html'; }, 100);
       } else {
-        // 未登录：显示官网首页（和桌面版一样）
-        navigateTo('pages/index.html');
+        document.getElementById('loginSection').style.display = 'flex';
+        document.getElementById('mainFrame').style.display = 'none';
       }
     });
     
