@@ -657,13 +657,10 @@
       localStorage.setItem('loginTime', Date.now().toString());
       hideError();
 
-      // 把用户信息编码到 URL hash，刷新父窗口
+      // 写入 localStorage 后刷新顶层窗口（移动端最可靠的方式）
       var encoded = encodeURIComponent(JSON.stringify(info));
-      if (window.parent && window.parent !== window) {
-        window.parent.location.href = '../mobile.html#loggedin=' + encoded;
-      } else {
-        location.href = '../mobile.html#loggedin=' + encoded;
-      }
+      localStorage.setItem('login_pending', encoded);
+      top.location.href = '../mobile.html#loggedin=' + encoded;
     }
 
     // 处理注册
