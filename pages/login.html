@@ -657,10 +657,10 @@
       localStorage.setItem('loginTime', Date.now().toString());
       hideError();
 
-      // 把用户信息编码到 URL 参数，刷新父窗口
+      // 把用户信息编码到 URL hash，刷新父窗口
       var encoded = encodeURIComponent(JSON.stringify(info));
       if (window.parent && window.parent !== window) {
-        window.parent.location.href = window.parent.location.href.split('#')[0] + '#loggedin=' + encoded;
+        window.parent.location.href = '../mobile.html#loggedin=' + encoded;
       } else {
         location.href = '../mobile.html#loggedin=' + encoded;
       }
