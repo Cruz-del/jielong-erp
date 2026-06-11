@@ -647,7 +647,8 @@
       }
 
       var user = users.find(function(u) { return u.email === username && u.password === password; });
-      if (!user) { showError('账号或密码错误，当前用户数：' + users.length); return; }
+      alert('用户数：' + users.length + '，找到：' + (user ? user.email : '无'));
+      if (!user) { showError('账号或密码错误'); return; }
 
       var info = { id: user.id, email: user.email, username: user.username || username, role: user.role || '外贸业务员', lastLogin: new Date().toISOString() };
       sessionStorage.setItem('currentUser', JSON.stringify(info));

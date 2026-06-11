@@ -358,9 +358,18 @@
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'loginSuccess') {
         console.log('✅ 登录成功');
+        // 保存用户信息到父窗口 sessionStorage
+        if (event.data.user) {
+          sessionStorage.setItem('currentUser', JSON.stringify(event.data.user));
+          sessionStorage.setItem('isLoggedIn', 'true');
+        }
         showToast('登录成功！欢迎回来', 'success');
+        buildMobileNav();
         document.getElementById('bottomNav').style.display = 'flex';
-        navigateTo('pages/dashboard.html');
+        // 直接加载仪表盘，不走 requireAuth
+        var iframe = document.getElementById('mainFrame');
+        iframe.src = 'pages/dashboard.html';
+        currentPage = 'pages/dashboard.html';
       }
       
       if (event.data && event.data.type === 'logout') {
