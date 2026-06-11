@@ -519,7 +519,7 @@
     function mobileShowRegister() { document.getElementById('loginSection').style.display='none'; document.getElementById('registerSection').style.display='flex'; }
     function mobileShowLogin() { document.getElementById('registerSection').style.display='none'; document.getElementById('loginSection').style.display='flex'; }
 
-    // 页面初始化
+    // 页面初始化——始终先显示登录遮罩
     document.addEventListener('DOMContentLoaded', function() {
       if (checkLoginStatus()) {
         buildMobileNav();
@@ -527,10 +527,9 @@
         document.getElementById('mainFrame').src = 'pages/dashboard.html';
         currentPage = 'pages/dashboard.html';
         document.getElementById('loginOverlay').style.display = 'none';
-        document.getElementById('registerOverlay').style.display = 'none';
       } else {
         document.getElementById('loginOverlay').style.display = 'flex';
-        document.getElementById('bottomNav').style.display = 'none';
+        document.getElementById('mainFrame').style.display = 'none';
       }
     });
     
