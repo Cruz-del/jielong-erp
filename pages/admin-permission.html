@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>权限管理 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/permission.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 24px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .container {
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .tab-item {
+      padding: 12px 24px;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: #6b7280;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-item.active {
+      color: #3b82f6;
+      border-bottom-color: #3b82f6;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .role-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid #3b82f6;
+    }
+    .role-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .role-description {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+    .permission-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .permission-tag {
+      padding: 4px 10px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    .data-access-badge {
+      padding: 4px 10px;
+      background: #fef3c7;
+      color: #d97706;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-top: 8px;
+      display: inline-block;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th,
+    .data-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      font-size: 13px;
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .action-icons {
+      display: flex;
+      gap: 8px;
+    }
+    .action-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .action-icon:hover {
+      background: #f3f4f6;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+    .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 80px;
+      resize: vertical;
+    }
+    .field-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .field-name {
+      font-weight: 500;
+      flex: 1;
+    }
+    .field-description {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      background: #d1d5db;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-switch.active {
+      background: #3b82f6;
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: left 0.2s;
+    }
+    .toggle-switch.active::after {
+      left: 26px;
+    }
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .user-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .user-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    .hidden-field-info {
+      background: #fffbeb;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #f59e0b;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #92400e;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f3f4f6;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #f3f4f6;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: #9ca3af;
+    }
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    .empty-state p {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="header-title">权限管理</h1>
+      <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin: 4px 0 0 0;">管理系统角色和用户权限</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="exportPermissions()">
+        <i class="fas fa-download"></i> 导出权限
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tab-bar">
+      <button class="tab-item active" onclick="switchTab('roles')">角色管理</button>
+      <button class="tab-item" onclick="switchTab('users')">用户管理</button>
+      <button class="tab-item" onclick="switchTab('fields')">字段权限</button>
+      <button class="tab-item" onclick="switchTab('logs')">操作日志</button>
+    </div>
+
+    <!-- 角色管理 -->
+    <div id="roles" class="tab-content active">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">系统角色</h2>
+          <button class="btn btn-primary" onclick="showAddRoleModal()">
+            <i class="fas fa-plus"></i> 新建角色
+          </button>
+        </div>
+        <div class="role-grid" id="roleGrid">
+          <!-- 角色卡片将通过JS渲染 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户管理 -->
+    <div id="users" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">用户列表</h2>
+          <button class="btn btn-primary" onclick="showAddUserModal()">
+            <i class="fas fa-plus"></i> 新建用户
+          </button>
+        </div>
+        <div class="search-bar">
+          <input type="text" class="search-input" placeholder="搜索用户..." id="userSearch">
+          <select class="form-select" style="width: 150px;" id="roleFilter">
+            <option value="">全部角色</option>
+          </select>
+        </div>
+        <div class="user-list" id="userList">
+          <!-- 用户列表将通过JS渲染 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 字段权限 -->
+    <div id="fields" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">字段权限配置</h2>
+          <p class="hidden-field-info">
+            <i class="fas fa-info-circle"></i> 隐藏字段将显示为 ***，保护敏感数据隐私
+          </p>
+        </div>
+        <div id="fieldPermissions">
+          <!-- 字段权限将通过JS渲染 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 操作日志 -->
+    <div id="logs" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">操作日志</h2>
+          <button class="btn btn-primary" onclick="AuditLog.exportLogs()">
+            <i class="fas fa-download"></i> 导出日志
+          </button>
+        </div>
+        <div class="search-bar">
+          <input type="text" class="search-input" placeholder="搜索日志..." id="logSearch">
+          <select class="form-select" style="width: 150px;" id="logTypeFilter">
+            <option value="">全部类型</option>
+          </select>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="logTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>类型</th>
+                <th>用户</th>
+                <th>时间</th>
+                <th>详情</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 日志内容将通过JS渲染 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建角色弹窗 -->
+  <div class="modal-overlay" id="addRoleModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">新建角色</h3>
+        <div class="modal-close" onclick="closeAddRoleModal()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">角色名称</label>
+          <input type="text" class="form-input" id="roleName" placeholder="如：销售经理">
+        </div>
+        <div class="form-group">
+          <label class="form-label">角色描述</label>
+          <textarea class="form-textarea" id="roleDesc" placeholder="描述该角色的职责"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">数据访问权限</label>
+          <select class="form-select" id="dataAccess">
+            <option value="all">全部数据</option>
+            <option value="team">团队数据</option>
+            <option value="own">仅自己数据</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">权限列表</label>
+          <div id="permissionCheckboxes">
+            <!-- 权限复选框将通过JS渲染 -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddRoleModal()">取消</button>
+        <button class="btn btn-primary" onclick="addRole()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建用户弹窗 -->
+  <div class="modal-overlay" id="addUserModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">新建用户</h3>
+        <div class="modal-close" onclick="closeAddUserModal()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">用户名</label>
+          <input type="text" class="form-input" id="userName" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+          <label class="form-label">邮箱</label>
+          <input type="email" class="form-input" id="userEmail" placeholder="请输入邮箱">
+        </div>
+        <div class="form-group">
+          <label class="form-label">所属部门</label>
+          <input type="text" class="form-input" id="userDept" placeholder="如：跟单部">
+        </div>
+        <div class="form-group">
+          <label class="form-label">所属团队</label>
+          <input type="text" class="form-input" id="userTeam" placeholder="如：A组">
+        </div>
+        <div class="form-group">
+          <label class="form-label">角色</label>
+          <select class="form-select" id="userRole">
+            <option value="">请选择角色</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddUserModal()">取消</button>
+        <button class="btn btn-primary" onclick="addUser()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 初始化权限系统
+    PermissionSystem.init();
+
+    // 角色数据
+    const rolesData = [
+      { id: 'super_admin', name: '超级管理员', description: '拥有系统所有权限', permissions: ['*'], dataAccess: 'all', color: '#ef4444' },
+      { id: 'follow_up_supervisor', name: '跟单主管', description: '查看所有跟单，审核异常处理，分配工厂', permissions: ['view_all_orders', 'audit_abnormal', 'assign_factory', 'view_team_orders', 'edit_order', 'create_order'], dataAccess: 'team', color: '#3b82f6' },
+      { id: 'follow_up_staff', name: '跟单员', description: '仅管理自己负责的订单', permissions: ['view_my_orders', 'edit_order', 'upload_documents', 'report_abnormal'], dataAccess: 'own', color: '#22c55e' },
+      { id: 'finance_supervisor', name: '财务主管', description: '查看所有财务数据，核销回款', permissions: ['view_all_finance', 'verify_payment', 'view_all_orders', 'export_finance_data'], dataAccess: 'all', color: '#f59e0b' },
+      { id: 'finance_assistant', name: '财务助理', description: '只允许录入发票、水单，不可核销', permissions: ['view_finance', 'enter_invoice', 'enter_water_bill', 'view_orders'], dataAccess: 'all', color: '#8b5cf6' },
+      { id: 'boss', name: '老板', description: '只读所有看板，不可修改业务数据', permissions: ['view_all_dashboards', 'view_profit_report', 'view_summary'], dataAccess: 'all', color: '#06b6d4' }
+    ];
+
+    // 用户数据
+    const usersData = [
+      { id: 'u001', name: '张明', email: 'zhangming@jielong.com', department: '管理层', team: '管理层', role: 'super_admin' },
+      { id: 'u002', name: '李华', email: 'lihua@jielong.com', department: '跟单部', team: 'A组', role: 'follow_up_supervisor' },
+      { id: 'u003', name: '王芳', email: 'wangfang@jielong.com', department: '跟单部', team: 'A组', role: 'follow_up_staff' },
+      { id: 'u004', name: '赵强', email: 'zhaoqiang@jielong.com', department: '跟单部', team: 'B组', role: 'follow_up_staff' },
+      { id: 'u005', name: '陈静', email: 'chenjing@jielong.com', department: '财务部', team: '财务组', role: 'finance_supervisor' },
+      { id: 'u006', name: '刘伟', email: 'liuwei@jielong.com', department: '财务部', team: '财务组', role: 'finance_assistant' },
+      { id: 'u007', name: '周杰', email: 'zhoujie@jielong.com', department: '管理层', team: '管理层', role: 'boss' }
+    ];
+
+    // 字段权限数据
+    const fieldsData = [
+      { name: 'cost_price', displayName: '成本价', description: '产品的成本价格', sensitive: true },
+      { name: 'bank_account', displayName: '银行账号', description: '客户/工厂的银行账户信息', sensitive: true },
+      { name: 'factory_contact', displayName: '工厂联系方式', description: '工厂的联系电话和地址', sensitive: true },
+      { name: 'customer_phone', displayName: '客户电话', description: '客户的联系电话', sensitive: true },
+      { name: 'profit_margin', displayName: '毛利率', description: '订单的毛利率', sensitive: false },
+      { name: 'order_no', displayName: '订单编号', description: '订单的唯一标识', sensitive: false },
+      { name: 'customer_name', displayName: '客户名称', description: '客户的公司名称', sensitive: false },
+      { name: 'factory_name', displayName: '工厂名称', description: '工厂的名称', sensitive: false }
+    ];
+
+    // 权限名称映射
+    const permissionNames = {
+      'view_all_orders': '查看所有订单',
+      'audit_abnormal': '审核异常处理',
+      'assign_factory': '分配工厂',
+      'view_team_orders': '查看团队订单',
+      'edit_order': '编辑订单',
+      'create_order': '创建订单',
+      'upload_documents': '上传文件',
+      'report_abnormal': '上报异常',
+      'view_finance_summary': '查看财务汇总',
+      'view_all_finance': '查看所有财务',
+      'verify_payment': '核销回款',
+      'export_finance_data': '导出财务数据',
+      'view_profit_report': '查看利润报表',
+      'view_finance': '查看财务',
+      'enter_invoice': '录入发票',
+      'enter_water_bill': '录入水单',
+      'view_orders': '查看订单',
+      'view_my_orders': '查看我的订单',
+      'view_all_dashboards': '查看所有看板',
+      'view_summary': '查看汇总',
+      'export_summary': '导出汇总'
+    };
+
+    // 切换标签页
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(item => item.classList.remove('active'));
+      document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      
+      // 初始化对应标签页
+      if (tabId === 'roles') renderRoles();
+      else if (tabId === 'users') renderUsers();
+      else if (tabId === 'fields') renderFields();
+      else if (tabId === 'logs') renderLogs();
+    }
+
+    // 渲染角色列表
+    function renderRoles() {
+      const grid = document.getElementById('roleGrid');
+      grid.innerHTML = rolesData.map(role => `
+        <div class="role-card" style="border-left-color: ${role.color}">
+          <h3 class="role-name">
+            <span style="width: 12px; height: 12px; border-radius: 50%; background: ${role.color}; display: inline-block;"></span>
+            ${role.name}
+          </h3>
+          <p class="role-description">${role.description}</p>
+          <div class="permission-tags">
+            ${role.permissions.includes('*') 
+              ? '<span class="permission-tag">全部权限</span>' 
+              : role.permissions.slice(0, 4).map(p => `<span class="permission-tag">${permissionNames[p] || p}</span>`).join('')
+            }
+          </div>
+          ${role.permissions.length > 4 && !role.permissions.includes('*') ? `<p style="font-size: 12px; color: #9ca3af; margin-top: 8px;">还有 ${role.permissions.length - 4} 项权限...</p>` : ''}
+          <div class="data-access-badge">
+            ${role.dataAccess === 'all' ? '全部数据' : role.dataAccess === 'team' ? '团队数据' : '仅自己数据'}
+          </div>
+          <div class="action-icons" style="margin-top: 12px;">
+            <div class="action-icon" onclick="editRole('${role.id}')" aria-label="编辑角色">
+              <i class="fas fa-edit"></i>
+            </div>
+            <div class="action-icon" onclick="deleteRole('${role.id}')" aria-label="删除角色">
+              <i class="fas fa-trash"></i>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 渲染用户列表
+    function renderUsers() {
+      const list = document.getElementById('userList');
+      const search = document.getElementById('userSearch').value.toLowerCase();
+      const roleFilter = document.getElementById('roleFilter').value;
+      
+      const filtered = usersData.filter(user => {
+        const matchSearch = user.name.toLowerCase().includes(search) || user.email.toLowerCase().includes(search);
+        const matchRole = !roleFilter || user.role === roleFilter;
+        return matchSearch && matchRole;
+      });
+      
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <p>暂无匹配的用户</p>
+          </div>
+        `;
+        return;
+      }
+      
+      list.innerHTML = filtered.map(user => {
+        const role = rolesData.find(r => r.id === user.role);
+        return `
+          <div class="user-item">
+            <div class="user-info">
+              <div class="user-avatar" style="background: ${role?.color || '#3b82f6'}">${user.name[0]}</div>
+              <div>
+                <p style="font-weight: 500; margin: 0;">${user.name}</p>
+                <p style="font-size: 13px; color: #6b7280; margin: 2px 0 0 0;">${role?.name || user.role}</p>
+              </div>
+            </div>
+            <div>
+              <p style="font-size: 13px; color: #6b7280; margin: 0;">${user.email}</p>
+              <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0;">${user.department} / ${user.team}</p>
+            </div>
+            <div class="action-icons">
+              <div class="action-icon" onclick="editUser('${user.id}')" aria-label="编辑用户">
+                <i class="fas fa-edit"></i>
+              </div>
+              <div class="action-icon" onclick="deleteUser('${user.id}')" aria-label="删除用户">
+                <i class="fas fa-trash"></i>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 渲染字段权限
+    function renderFields() {
+      const container = document.getElementById('fieldPermissions');
+      
+      container.innerHTML = `
+        <div class="role-grid">
+          ${rolesData.map(role => `
+            <div class="card">
+              <h3 style="color: ${role.color}; margin: 0 0 12px 0; font-size: 15px;">${role.name}</h3>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                ${fieldsData.map(field => {
+                  // 判断该角色是否隐藏此字段
+                  const isHidden = role.id === 'boss' && field.sensitive || 
+                                   role.id === 'finance_supervisor' && field.name === 'factory_contact' ||
+                                   role.id === 'finance_assistant' && (field.name === 'factory_contact' || field.name === 'cost_price');
+                  return `
+                    <div class="field-item">
+                      <div>
+                        <div class="field-name">${field.displayName}</div>
+                        <div class="field-description">${field.description}</div>
+                      </div>
+                      <div class="toggle-switch ${isHidden ? 'active' : ''}" onclick="toggleFieldPermission('${role.id}', '${field.name}')"></div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // 渲染日志列表
+    function renderLogs() {
+      const tbody = document.getElementById('logTable').querySelector('tbody');
+      const search = document.getElementById('logSearch').value.toLowerCase();
+      const typeFilter = document.getElementById('logTypeFilter').value;
+      
+      const logs = AuditLog.getLogs({ type: typeFilter || undefined });
+      const filtered = logs.filter(log => 
+        log.details.toLowerCase().includes(search) || 
+        log.userName.toLowerCase().includes(search)
+      );
+      
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="empty-state">
+              <i class="fas fa-file-alt"></i>
+              <p>暂无操作日志</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = filtered.map(log => `
+        <tr>
+          <td style="font-family: monospace; font-size: 12px;">${log.id}</td>
+          <td><span class="permission-tag" style="background: #f3f4f6; color: #374151;">${AuditLog.getLogTypeName(log.type)}</span></td>
+          <td>${log.userName}</td>
+          <td>${new Date(log.timestamp).toLocaleString('zh-CN')}</td>
+          <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.details}</td>
+        </tr>
+      `).join('');
+    }
+
+    // 显示新建角色弹窗
+    function showAddRoleModal() {
+      document.getElementById('addRoleModal').classList.add('active');
+      
+      // 渲染权限复选框
+      const container = document.getElementById('permissionCheckboxes');
+      container.innerHTML = Object.entries(permissionNames).map(([key, name]) => `
+        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <input type="checkbox" name="permissions" value="${key}">
+          <span style="font-size: 13px;">${name}</span>
+        </label>
+      `).join('');
+    }
+
+    // 关闭新建角色弹窗
+    function closeAddRoleModal() {
+      document.getElementById('addRoleModal').classList.remove('active');
+      document.getElementById('roleName').value = '';
+      document.getElementById('roleDesc').value = '';
+      document.getElementById('dataAccess').value = 'all';
+    }
+
+    // 添加角色
+    function addRole() {
+      const name = document.getElementById('roleName').value.trim();
+      const desc = document.getElementById('roleDesc').value.trim();
+      const dataAccess = document.getElementById('dataAccess').value;
+      const permissions = Array.from(document.querySelectorAll('#permissionCheckboxes input:checked')).map(cb => cb.value);
+      
+      if (!name) {
+        Toast.warning('请输入角色名称');
+        return;
+      }
+      
+      if (permissions.length === 0) {
+        Toast.warning('请至少选择一项权限');
+        return;
+      }
+      
+      const newRole = {
+        id: 'custom_' + Date.now(),
+        name,
+        description: desc,
+        permissions,
+        dataAccess,
+        color: '#' + Math.floor(Math.random()*16777215).toString(16)
+      };
+      
+      rolesData.push(newRole);
+      closeAddRoleModal();
+      renderRoles();
+      updateRoleFilter();
+      
+      // 记录日志
+      AuditLog.add(AuditLog.LOG_TYPES.CREATE, `创建角色: ${name}`);
+      
+      Toast.success('角色创建成功');
+    }
+
+    // 显示新建用户弹窗
+    function showAddUserModal() {
+      document.getElementById('addUserModal').classList.add('active');
+      updateUserRoleSelect();
+    }
+
+    // 关闭新建用户弹窗
+    function closeAddUserModal() {
+      document.getElementById('addUserModal').classList.remove('active');
+      document.getElementById('userName').value = '';
+      document.getElementById('userEmail').value = '';
+      document.getElementById('userDept').value = '';
+      document.getElementById('userTeam').value = '';
+      document.getElementById('userRole').value = '';
+    }
+
+    // 添加用户
+    function addUser() {
+      const name = document.getElementById('userName').value.trim();
+      const email = document.getElementById('userEmail').value.trim();
+      const dept = document.getElementById('userDept').value.trim();
+      const team = document.getElementById('userTeam').value.trim();
+      const role = document.getElementById('userRole').value;
+      
+      if (!name || !email || !role) {
+        Toast.warning('请填写必填字段');
+        return;
+      }
+      
+      const newUser = {
+        id: 'u' + String(usersData.length + 1).padStart(3, '0'),
+        name,
+        email,
+        department: dept,
+        team: team || '-',
+        role
+      };
+      
+      usersData.push(newUser);
+      closeAddUserModal();
+      renderUsers();
+      
+      // 记录日志
+      AuditLog.add(AuditLog.LOG_TYPES.CREATE, `创建用户: ${name}`);
+      
+      Toast.success('用户创建成功');
+    }
+
+    // 编辑角色
+    function editRole(roleId) {
+      Toast.info('编辑角色功能开发中');
+    }
+
+    // 删除角色
+    function deleteRole(roleId) {
+      ConfirmModal.show({
+        title: '删除角色',
+        message: '确定要删除该角色吗？已分配此角色的用户将失去相关权限。',
+        confirmText: '确认删除',
+        cancelText: '取消',
+        type: 'danger',
+        onConfirm: () => {
+          const index = rolesData.findIndex(r => r.id === roleId);
+          if (index > -1) {
+            rolesData.splice(index, 1);
+            renderRoles();
+            updateRoleFilter();
+            AuditLog.add(AuditLog.LOG_TYPES.DELETE, `删除角色: ${roleId}`);
+            Toast.success('角色已删除');
+          }
+        }
+      });
+    }
+
+    // 编辑用户
+    function editUser(userId) {
+      Toast.info('编辑用户功能开发中');
+    }
+
+    // 删除用户
+    function deleteUser(userId) {
+      const user = usersData.find(u => u.id === userId);
+      ConfirmModal.show({
+        title: '删除用户',
+        message: `确定要删除用户 "${user?.name}" 吗？此操作不可恢复。`,
+        confirmText: '确认删除',
+        cancelText: '取消',
+        type: 'danger',
+        onConfirm: () => {
+          const index = usersData.findIndex(u => u.id === userId);
+          if (index > -1) {
+            usersData.splice(index, 1);
+            renderUsers();
+            AuditLog.add(AuditLog.LOG_TYPES.DELETE, `删除用户: ${user?.name}`);
+            Toast.success('用户已删除');
+          }
+        }
+      });
+    }
+
+    // 切换字段权限
+    function toggleFieldPermission(roleId, fieldName) {
+      Toast.info(`角色权限配置功能开发中`);
+    }
+
+    // 更新角色筛选器
+    function updateRoleFilter() {
+      const select = document.getElementById('roleFilter');
+      select.innerHTML = '<option value="">全部角色</option>' + 
+        rolesData.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    }
+
+    // 更新用户角色选择器
+    function updateUserRoleSelect() {
+      const select = document.getElementById('userRole');
+      select.innerHTML = '<option value="">请选择角色</option>' + 
+        rolesData.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+    }
+
+    // 更新日志类型筛选器
+    function updateLogTypeFilter() {
+      const select = document.getElementById('logTypeFilter');
+      select.innerHTML = '<option value="">全部类型</option>' + 
+        AuditLog.getAllLogTypes().map(t => `<option value="${t.value}">${t.label}</option>`).join('');
+    }
+
+    // 导出权限配置
+    function exportPermissions() {
+      const data = {
+        roles: rolesData,
+        users: usersData,
+        exportTime: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `permissions_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      AuditLog.add(AuditLog.LOG_TYPES.EXPORT, '导出权限配置');
+      Toast.success('权限配置已导出');
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 渲染初始页面
+      renderRoles();
+      
+      // 设置搜索监听
+      document.getElementById('userSearch').addEventListener('input', renderUsers);
+      document.getElementById('roleFilter').addEventListener('change', renderUsers);
+      document.getElementById('logSearch').addEventListener('input', renderLogs);
+      document.getElementById('logTypeFilter').addEventListener('change', renderLogs);
+      
+      // 更新筛选器
+      updateRoleFilter();
+      updateLogTypeFilter();
+      
+      // 添加示例日志
+      if (AuditLog.getLogs().length === 0) {
+        AuditLog.add(AuditLog.LOG_TYPES.LOGIN, '管理员登录系统');
+        AuditLog.add(AuditLog.LOG_TYPES.CREATE, '创建角色: 跟单主管');
+        AuditLog.add(AuditLog.LOG_TYPES.UPDATE, '更新用户: 张明的权限');
+        AuditLog.add(AuditLog.LOG_TYPES.EXPORT, '导出财务报表');
+      }
+      
+      // 初始化Toast
+      Toast.init();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>跟单工作台 - 捷隆纺织 v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js?v=2"></script>
+  <script src="../js/state.js?v=2"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/permissions.js"></script>
+  <style>
+    /* ====== 捷隆纺织 · 企业级移动端设计系统 ====== */
+    :root {
+      --bg: #eef0f4;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e8ecf1;
+      --accent: #2563eb;
+      --accent-light: #eff4ff;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --warning: #f59e0b;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.03), 0 2px 8px rgba(0,0,0,.04);
+      --shadow-md: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.06);
+      --shadow-lg: 0 4px 6px rgba(0,0,0,.04), 0 12px 32px rgba(0,0,0,.08);
+      --radius-sm: 10px;
+      --radius: 14px;
+      --radius-lg: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(155deg, #0f2744 0%, #1b3d62 40%, #1e4d7b 100%);
+      padding: 24px 20px 22px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -40px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, rgba(255,255,255,.06) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -30px; left: 30%;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(255,255,255,.04) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0;
+      position: relative;
+      z-index: 1;
+      letter-spacing: 0.3px;
+    }
+    .header-subtitle {
+      font-size: 12.5px;
+      color: rgba(255,255,255,.65);
+      margin-top: 5px;
+      position: relative;
+      z-index: 1;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+    }
+
+    /* Main Content */
+    .main-content { padding: 14px 14px 80px; }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px 10px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .stat-card:active { transform: scale(.97); }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .stat-card.normal::before { background: var(--accent); }
+    .stat-card.warning::before { background: var(--danger); }
+    .stat-card.success::before { background: var(--success); }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      margin: 0;
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+    .stat-card.warning .stat-value { color: var(--danger); }
+    .stat-card.success .stat-value { color: var(--success); }
+    .stat-label {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      background: var(--card);
+      padding: 8px;
+      display: flex;
+      gap: 8px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .search-input {
+      flex: 1;
+      padding: 11px 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      background: #f8fafc;
+      outline: none;
+      transition: background .2s;
+    }
+    .search-input:focus { background: #f1f5f9; }
+    .search-btn {
+      padding: 11px 18px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background .2s, transform .15s;
+      white-space: nowrap;
+    }
+    .search-btn:active { transform: scale(.96); background: #1d4ed8; }
+
+    /* Filter Tags */
+    .filter-section {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .filter-section::-webkit-scrollbar { display: none; }
+    .filter-tag {
+      padding: 8px 17px;
+      border-radius: 24px;
+      font-size: 12.5px;
+      cursor: pointer;
+      border: 1.5px solid #dde1e7;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      font-weight: 500;
+      background: var(--card);
+      transition: all .2s;
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-tag.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      box-shadow: 0 2px 10px rgba(37,99,235,.25);
+    }
+
+    /* Action Bar */
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 13px 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      box-shadow: 0 2px 10px rgba(37,99,235,.2);
+      transition: all .2s;
+    }
+    .action-btn:active { transform: scale(.97); }
+    .export-btn {
+      padding: 13px 18px;
+      background: var(--card);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .2s;
+    }
+    .export-btn:active { background: #f8fafc; }
+
+    /* Quick Menu */
+    .quick-menu { margin-bottom: 18px; }
+    .quick-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .quick-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .quick-item {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px 8px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all .25s cubic-bezier(.4,0,.2,1);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .quick-item::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(37,99,235,.03) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity .25s;
+    }
+    .quick-item:active { transform: scale(.96); }
+    .quick-item:active::after { opacity: 1; }
+    .quick-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 21px;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    .quick-label {
+      font-size: 12px;
+      color: var(--text);
+      text-align: center;
+      font-weight: 500;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Order List */
+    .order-list { display: flex; flex-direction: column; gap: 10px; }
+    .order-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 17px;
+      cursor: pointer;
+      transition: all .25s cubic-bezier(.4,0,.2,1);
+      box-shadow: var(--shadow-sm);
+      border-left: 3px solid transparent;
+    }
+    .order-card:active { transform: scale(.985); }
+    .order-card.delay {
+      border-left-color: var(--danger);
+      background: linear-gradient(135deg, #fff 0%, var(--danger-light) 100%);
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .order-pl {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+      letter-spacing: -0.2px;
+    }
+    .delay-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      background: var(--danger-light);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--danger);
+    }
+    .order-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .info-item i { font-size: 11px; color: #94a3b8; width: 16px; text-align: center; }
+    .info-value { font-weight: 600; color: var(--text); }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 7px;
+    }
+    .progress-step { font-size: 12.5px; font-weight: 600; color: var(--text); }
+    .progress-percent { font-size: 13px; font-weight: 700; color: var(--accent); }
+    .progress-bar {
+      height: 6px;
+      background: #e8ecf1;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+    .progress-fill.design { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .progress-fill.production { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .progress-fill.packing { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .progress-fill.qc { background: linear-gradient(90deg, #10b981, #34d399); }
+
+    /* Skeleton */
+    @keyframes shimmer {
+      0% { background-position: -200px 0; }
+      100% { background-position: calc(200px + 100%) 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #e8ecf1 25%, #f1f5f9 50%, #e8ecf1 75%);
+      background-size: 200px 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">跟单工作台</h1>
+    <p class="header-subtitle">订单管理总览</p>
+  </div>
+
+  <div class="main-content">
+
+  <div class="stats-bar">
+    <div class="stat-card normal">
+      <p class="stat-value" id="statProcessing">—</p>
+      <p class="stat-label">进行中</p>
+    </div>
+    <div class="stat-card warning">
+      <p class="stat-value" id="statDelayed">—</p>
+      <p class="stat-label">延期</p>
+    </div>
+    <div class="stat-card success">
+      <p class="stat-value" id="statPending">—</p>
+      <p class="stat-label">待回款</p>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="search-input" placeholder="搜索订单号、客户、花型...">
+    <button class="search-btn">
+      <i class="fas fa-search"></i> 搜索
+    </button>
+  </div>
+
+  <div class="filter-section" id="filterSection">
+    <span class="filter-tag active" data-filter="all" role="button" tabindex="0" aria-pressed="true">全部</span>
+    <span class="filter-tag" data-filter="01" role="button" tabindex="0">01 询价</span>
+    <span class="filter-tag" data-filter="02" role="button" tabindex="0">02 计划单</span>
+    <span class="filter-tag" data-filter="03" role="button" tabindex="0">03 设计</span>
+    <span class="filter-tag" data-filter="04" role="button" tabindex="0">04 生产</span>
+    <span class="filter-tag" data-filter="05" role="button" tabindex="0">05 QC</span>
+    <span class="filter-tag" data-filter="06" role="button" tabindex="0">06 装箱</span>
+    <span class="filter-tag" data-filter="07" role="button" tabindex="0">07 出货</span>
+    <span class="filter-tag" data-filter="08" role="button" tabindex="0">08 单证</span>
+    <span class="filter-tag" data-filter="09" role="button" tabindex="0">09 回款</span>
+    <span class="filter-tag" data-filter="delayed" role="button" tabindex="0">⚠延期</span>
+  </div>
+
+  <div class="action-bar">
+    <button class="action-btn" onclick="handleCreateOrder()" aria-label="新建订单">
+      <i class="fas fa-plus" aria-hidden="true"></i> 新建订单
+    </button>
+    <button class="export-btn" onclick="handleExport()" aria-label="批量导出">
+      <i class="fas fa-download" aria-hidden="true"></i> 批量导出
+    </button>
+  </div>
+
+  <!-- 工作台专属：订单与生产 -->
+  <div class="quick-menu">
+    <h3 class="quick-title">📋 订单与生产</h3>
+    <div class="quick-grid">
+      <div class="quick-item" onclick="navigateTo('pages/order-create.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#3b82f6;"><i class="fas fa-file-plus"></i></div>
+        <span class="quick-label">计划单</span>
+      </div>
+      <div class="quick-item" onclick="navigateTo('pages/inquiry.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#d97706;"><i class="fas fa-file-text"></i></div>
+        <span class="quick-label">询价管理</span>
+      </div>
+      <div class="quick-item" onclick="navigateTo('pages/design-production.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#fce7f3,#fbcfe8);color:#db2777;"><i class="fas fa-palette"></i></div>
+        <span class="quick-label">设计生产</span>
+      </div>
+      <div class="quick-item" onclick="navigateTo('pages/library-mark.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe);color:#4f46e5;"><i class="fas fa-tag"></i></div>
+        <span class="quick-label">唛头库</span>
+      </div>
+      <div class="quick-item" onclick="navigateTo('pages/factory.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#059669;"><i class="fas fa-industry"></i></div>
+        <span class="quick-label">工厂档案</span>
+      </div>
+      <div class="quick-item" onclick="navigateTo('pages/tasks.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#fee2e2,#fecaca);color:#dc2626;"><i class="fas fa-tasks"></i></div>
+        <span class="quick-label">待办任务</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="order-list" id="orderList">
+    <!-- 骨架屏占位 -->
+    <div class="skeleton-card" style="background:white;border-radius:12px;padding:16px;margin:12px 0;animation:pulse 1.5s ease-in-out infinite;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+        <div style="width:120px;height:20px;background:#e5e7eb;border-radius:4px;"></div>
+        <div style="width:80px;height:24px;background:#e5e7eb;border-radius:6px;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;">
+        <div style="height:16px;background:#e5e7eb;border-radius:4px;"></div>
+        <div style="height:16px;background:#e5e7eb;border-radius:4px;"></div>
+        <div style="height:16px;background:#e5e7eb;border-radius:4px;"></div>
+        <div style="height:16px;background:#e5e7eb;border-radius:4px;"></div>
+      </div>
+      <div style="height:8px;background:#e5e7eb;border-radius:4px;"></div>
+    </div>
+  </div>
+  </div>
+
+  <!-- 底部导航由外壳统一提供，这里不再重复 -->
+  
+  <script>
+  // ======================================================
+  // 仪表盘脚本（v2 - 数据驱动）
+  // ======================================================
+
+  // 当前加载的订单数据（用于筛选）
+  let allOrders = [];
+  let currentFilter = 'all';
+
+  // 导航函数
+  function navigateTo(page) {
+    if (window.parent && window.parent !== window) {
+      if (typeof window.parent.loadPage === 'function') {
+        window.parent.loadPage(page);
+      } else {
+        window.parent.postMessage({ type: 'navigate', page: page }, '*');
+      }
+    } else {
+      window.location.href = page;
+    }
+  }
+
+  // ======================== 数据加载 ========================
+
+  async function loadDashboardData() {
+    const orderListEl = document.getElementById('orderList');
+
+    // 并行加载统计和订单列表
+    const [statsResult, ordersResult] = await Promise.all([
+      window.DataService ? DataService.dashboard.getStats() : Promise.resolve({ data: null }),
+      window.DataService ? DataService.orders.list({ limit: 50 }) : Promise.resolve({ data: null })
+    ]);
+
+    // 更新统计数字
+    if (statsResult.data) {
+      updateStats(statsResult.data);
+    }
+
+    // 渲染订单列表
+    if (ordersResult.data && ordersResult.data.length > 0) {
+      allOrders = ordersResult.data;
+      renderOrders(allOrders);
+    } else {
+      // 显示空状态
+      orderListEl.innerHTML = `
+        <div style="text-align:center;padding:40px 20px;color:#9ca3af;">
+          <i class="fas fa-inbox" style="font-size:48px;margin-bottom:16px;display:block;"></i>
+          <p style="font-size:15px;margin:0;">暂无订单数据</p>
+          <p style="font-size:13px;margin:8px 0;">请在 Supabase SQL Editor 中执行 sql/init.sql 初始化数据库</p>
+          <button onclick="handleCreateOrder()" style="
+            margin-top:12px;padding:10px 24px;background:#3b82f6;color:white;border:none;
+            border-radius:10px;font-size:14px;cursor:pointer;
+          ">创建第一个订单</button>
+        </div>
+      `;
+    }
+
+    // 也显示来自 localStorage 的本地订单（离线回退）
+    if ((!ordersResult.data || ordersResult.data.length === 0) && !ordersResult.fromFallback) {
+      loadLocalOrdersFallback();
+    }
+  }
+
+  // localStorage 回退
+  function loadLocalOrdersFallback() {
+    const localOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+    if (localOrders.length > 0) {
+      allOrders = localOrders;
+      renderOrders(allOrders);
+      console.log('📋 从 localStorage 加载了 ' + localOrders.length + ' 个订单');
+    }
+  }
+
+  // 更新统计数字
+  function updateStats(stats) {
+    const statValues = document.querySelectorAll('.stat-value');
+    if (statValues.length >= 3) {
+      statValues[0].textContent = stats.processing || 0;
+      statValues[1].textContent = stats.delayed || 0;
+      statValues[2].textContent = stats.pendingPayment || 0;
+    }
+  }
+
+  // ======================== 渲染 ========================
+
+  // 进度条颜色映射
+  function getProgressClass(status) {
+    const map = {
+      '设计': 'design', '打样': 'design',
+      '采购': 'production', '生产': 'production',
+      '装箱': 'packing', 'QC': 'qc', '出货': 'qc'
+    };
+    return map[status] || 'design';
+  }
+
+  function renderOrders(orders) {
+    const container = document.getElementById('orderList');
+    if (!orders || orders.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">暂无匹配的订单</div>';
+      return;
+    }
+
+    container.innerHTML = orders.map(order => {
+      const isDelayed = order.is_delayed;
+      const progress = order.progress || 0;
+      const progressClass = getProgressClass(order.status);
+
+      return `
+        <div class="order-card${isDelayed ? ' delay' : ''}"
+             onclick="handleOrderClick('${order.id}')"
+             data-status="${order.status}"
+             data-delayed="${isDelayed}">
+          <div class="order-header">
+            <h3 class="order-pl">${escapeHtml(order.pl_number)}</h3>
+            ${isDelayed ? `
+              <span class="delay-badge" title="${escapeHtml(order.delay_reason || '')}">
+                <i class="fas fa-exclamation-circle"></i> 延期${order.delay_days || 0}天
+              </span>` : ''}
+          </div>
+          <div class="order-info">
+            <span class="info-item">
+              <i class="fas fa-user"></i>
+              <span class="info-value">${escapeHtml(order.customer_name || '—')}</span>
+            </span>
+            <span class="info-item">
+              <i class="fas fa-flower"></i>
+              <span class="info-value">${escapeHtml(order.design_pattern || '—')}</span>
+            </span>
+            <span class="info-item">
+              <i class="fas fa-box"></i>
+              <span class="info-value">${order.quantity || 0} ${order.unit || 'm'}</span>
+            </span>
+            <span class="info-item">
+              <i class="fas fa-clipboard-check"></i>
+              <span class="info-value" style="background:${getNodeColor(getNodeId(order))};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">${NODE_NAMES[getNodeId(order)]||order.status}</span>
+            </span>
+          </div>
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-step">${NODE_NAMES[getNodeId(order)]||order.status} · 节点${getNodeId(order)}/10</span>
+              <span class="progress-percent">${parseInt(getNodeId(order))*10}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill ${progressClass}" style="width: ${parseInt(getNodeId(order))*10}%;"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ======================== 筛选逻辑 ========================
+
+  function setActiveFilter(filterValue) {
+    currentFilter = filterValue;
+
+    // 更新UI
+    document.querySelectorAll('.filter-tag').forEach(tag => {
+      tag.classList.remove('active');
+      tag.setAttribute('aria-pressed', 'false');
+      if (tag.dataset.filter === filterValue) {
+        tag.classList.add('active');
+        tag.setAttribute('aria-pressed', 'true');
+      }
+    });
+
+    // 保存筛选状态
+    const searchInput = document.querySelector('.search-input');
+    if (typeof AppState !== 'undefined') {
+      AppState.saveFilter('dashboard', {
+        activeFilter: filterValue,
+        searchKeyword: searchInput ? searchInput.value : ''
+      });
+    }
+
+    // 应用筛选
+    filterOrders(filterValue);
+  }
+
+  // Status → Node mapping
+  const STATUS_NODE = {'设计':'03','打样':'03','采购':'04','生产':'04','QC':'05','装箱':'06','出货':'07','已完成':'10'};
+  const NODE_NAMES = {'01':'客户询价','02':'计划单','03':'设计确认','04':'工厂生产','05':'QC检验','06':'装箱','07':'出货','08':'单据','09':'回款','10':'归档'};
+
+  function getNodeId(order) {
+    return STATUS_NODE[order.status] || '02';
+  }
+  function getNodeColor(nodeId) {
+    const colors = {'01':'#f59e0b','02':'#3b82f6','03':'#8b5cf6','04':'#f97316','05':'#ef4444','06':'#06b6d4','07':'#2563eb','08':'#6366f1','09':'#10b981','10':'#6b7280'};
+    return colors[nodeId] || '#3b82f6';
+  }
+
+  function filterOrders(filterValue) {
+    let filtered;
+
+    if (filterValue === 'all') {
+      filtered = allOrders;
+    } else if (filterValue === 'delayed') {
+      filtered = allOrders.filter(o => o.is_delayed);
+    } else if (filterValue >= '01' && filterValue <= '10') {
+      // Filter by workflow node
+      filtered = allOrders.filter(o => getNodeId(o) === filterValue);
+    } else {
+      filtered = allOrders;
+    }
+
+    renderOrders(filtered);
+
+    if (typeof Toast !== 'undefined') {
+      const label = filterValue==='all'?'全部':filterValue==='delayed'?'延期':(NODE_NAMES[filterValue]||filterValue);
+      Toast.info(`筛选：${label}（${filtered.length}个订单）`);
+    }
+  }
+
+  function getFilterLabel(filterValue) {
+    const labels = { 'all': '全部', 'processing': '进行中', 'delayed': '延期', 'pending': '待回款', 'completed': '已完成' };
+    return labels[filterValue] || '全部';
+  }
+
+  // ======================== 搜索 ========================
+
+  async function performSearch() {
+    const keyword = document.querySelector('.search-input').value.trim();
+    if (!keyword) {
+      // 清空搜索，重新加载全部
+      renderOrders(allOrders);
+      return;
+    }
+
+    if (window.DataService) {
+      Loading.show('搜索中...');
+      const { data } = await DataService.orders.list({ search: keyword });
+      Loading.hide();
+      if (data) {
+        allOrders = data;
+        renderOrders(data);
+        if (typeof Toast !== 'undefined') Toast.success(`搜索"${keyword}"：找到 ${data.length} 个订单`);
+      }
+    } else {
+      // 本地筛选
+      const q = keyword.toLowerCase();
+      const results = allOrders.filter(o =>
+        (o.pl_number && o.pl_number.toLowerCase().includes(q)) ||
+        (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
+        (o.design_pattern && o.design_pattern.toLowerCase().includes(q))
+      );
+      renderOrders(results);
+    }
+  }
+
+  // ======================== 操作 ========================
+
+  function handleCreateOrder() {
+    if (typeof ConfirmModal !== 'undefined') {
+      ConfirmModal.show({
+        title: '新建订单',
+        message: '即将跳转到计划单生成页面，是否继续？',
+        confirmText: '确定',
+        cancelText: '取消',
+        type: 'info',
+        onConfirm: () => {
+          if (window.parent && typeof window.parent.loadPage === 'function') {
+            window.parent.loadPage('pages/order-create.html');
+          }
+        }
+      });
+    } else {
+      navigateTo('pages/order-create.html');
+    }
+  }
+
+  async function handleExport() {
+    if (typeof ConfirmModal === 'undefined') return;
+
+    ConfirmModal.show({
+      title: '批量导出',
+      message: `确定要导出当前筛选的订单为 Excel 吗？`,
+      confirmText: '导出',
+      cancelText: '取消',
+      type: 'info',
+      onConfirm: async () => {
+        Loading.show('正在导出...');
+
+        try {
+          // 收集当前显示的订单数据
+          const exportData = allOrders.map(o => ({
+            'PL编号': o.pl_number,
+            '客户': o.customer_name,
+            '花型': o.design_pattern,
+            '数量': o.quantity + ' ' + (o.unit || 'm'),
+            '状态': o.status,
+            '进度': o.progress + '%',
+            '是否延期': o.is_delayed ? '是' : '否'
+          }));
+
+          if (typeof ExportExcel !== 'undefined') {
+            ExportExcel.download(exportData, '订单列表_' + new Date().toISOString().split('T')[0]);
+          }
+          Loading.hide();
+          if (typeof Toast !== 'undefined') Toast.success('导出成功！');
+        } catch (e) {
+          Loading.hide();
+          if (typeof Toast !== 'undefined') Toast.error('导出失败: ' + e.message);
+        }
+      }
+    });
+  }
+
+  function handleOrderClick(orderId) {
+    if (typeof AppState !== 'undefined') {
+      AppState.set('currentOrder', orderId);
+    }
+    // 通过父页面导航到详情页
+    if (window.parent && typeof window.parent.loadPage === 'function') {
+      window.parent.loadPage('pages/order-detail.html?id=' + orderId);
+    } else {
+      window.location.href = 'order-detail.html?id=' + orderId;
+    }
+  }
+
+  // ======================== 初始化 ========================
+
+  function bindEvents() {
+    // 筛选标签
+    document.querySelectorAll('.filter-tag').forEach(tag => {
+      tag.addEventListener('click', function() {
+        setActiveFilter(this.dataset.filter);
+      });
+      tag.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setActiveFilter(this.dataset.filter);
+        }
+      });
+    });
+
+    // 搜索
+    const searchBtn = document.querySelector('.search-btn');
+    const searchInput = document.querySelector('.search-input');
+    if (searchBtn) searchBtn.addEventListener('click', performSearch);
+    if (searchInput) {
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') performSearch();
+      });
+    }
+
+    // 恢复筛选条件
+    if (typeof AppState !== 'undefined') {
+      const savedFilter = AppState.getFilter('dashboard');
+      if (savedFilter) {
+        if (savedFilter.searchKeyword && searchInput) {
+          searchInput.value = savedFilter.searchKeyword;
+        }
+        if (savedFilter.activeFilter) {
+          setActiveFilter(savedFilter.activeFilter);
+        }
+      }
+    }
+  }
+
+  // 初始化页面
+  // ===== 权限过滤：隐藏无权限的功能卡片 =====
+  function filterCardsByPermission() {
+    if (!window.Permission) return;
+    const role = Permission.getMyRole();
+    console.log('🔐 当前角色:', role, '可见卡片:', Permission.canSeeCard('ALL') ? '全部' : '已过滤');
+    document.querySelectorAll('.quick-item').forEach(item => {
+      const label = item.querySelector('.quick-label');
+      if (!label) return;
+      const cardName = label.textContent.trim();
+      if (!Permission.canSeeCard(cardName)) {
+        item.style.display = 'none';
+      }
+    });
+    // 隐藏空的模块标题
+    document.querySelectorAll('.quick-menu').forEach(menu => {
+      const visibleItems = menu.querySelectorAll('.quick-item:not([style*="display: none"])');
+      if (visibleItems.length === 0) menu.style.display = 'none';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    bindEvents();
+    loadDashboardData();
+    filterCardsByPermission();
+
+    // 监听 DataSync 实时更新
+    if (window.DataSync) {
+      DataSync.subscribe('orders', () => {
+        console.log('📡 订单数据变更，刷新列表');
+        loadDashboardData();
+      });
+    }
+  });
+
+  // 监听父页面消息
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'pageLoaded') {
+      // 页面被重新显示时刷新数据
+      loadDashboardData();
+    }
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>应收账款看板 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 120px;
+    }
+    .filter-label {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+    }
+    .cards-section {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .stat-card.warning .stat-value {
+      color: #dc2626;
+    }
+    .stat-card.success .stat-value {
+      color: #10b981;
+    }
+    .chart-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .chart-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 16px 0;
+    }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 120px;
+      gap: 12px;
+    }
+    .bar-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .bar {
+      width: 100%;
+      border-radius: 6px 6px 0 0;
+      transition: height 0.5s ease;
+    }
+    .bar-0 {
+      background: #10b981;
+      height: 80%;
+    }
+    .bar-1 {
+      background: #3b82f6;
+      height: 60%;
+    }
+    .bar-2 {
+      background: #f59e0b;
+      height: 40%;
+    }
+    .bar-3 {
+      background: #dc2626;
+      height: 70%;
+    }
+    .bar-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+    .table-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .table-info {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .status-overdue {
+      color: #dc2626;
+      font-weight: 500;
+    }
+    .status-normal {
+      color: #10b981;
+    }
+    .action-icons {
+      display: flex;
+      gap: 8px;
+    }
+    .action-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .action-icon:hover {
+      background: #f3f4f6;
+    }
+    .action-icon.remind {
+      color: #f59e0b;
+    }
+    .action-icon.reconcile {
+      color: #3b82f6;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+      min-height: 80px;
+    }
+    .btn-section {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-full {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-full.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .channel-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .channel-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .channel-btn.active {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .channel-btn i {
+      font-size: 18px;
+    }
+    .channel-btn.email i {
+      color: #3b82f6;
+    }
+    .channel-btn.wechat i {
+      color: #07c160;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">应收账款看板</h1>
+    <p class="header-subtitle">实时监控应收状态</p>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">币种</span>
+      <select class="filter-select">
+        <option>全部币种</option>
+        <option>USD</option>
+        <option>CNY</option>
+        <option>EUR</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">客户</span>
+      <select class="filter-select">
+        <option>全部客户</option>
+        <option>ABC Trading</option>
+        <option>XYZ Fashion</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="cards-section">
+    <div class="stat-card">
+      <p class="stat-value">$285,000</p>
+      <p class="stat-label">总应收金额</p>
+    </div>
+    <div class="stat-card warning">
+      <p class="stat-value">$45,000</p>
+      <p class="stat-label">超90天金额</p>
+    </div>
+    <div class="stat-card success">
+      <p class="stat-value">$85,000</p>
+      <p class="stat-label">本月回款预估</p>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h3 class="chart-title">账龄分析</h3>
+    <div class="bar-chart">
+      <div class="bar-item">
+        <div class="bar bar-0"></div>
+        <span class="bar-label">0-30天</span>
+      </div>
+      <div class="bar-item">
+        <div class="bar bar-1"></div>
+        <span class="bar-label">30-60天</span>
+      </div>
+      <div class="bar-item">
+        <div class="bar bar-2"></div>
+        <span class="bar-label">60-90天</span>
+      </div>
+      <div class="bar-item">
+        <div class="bar bar-3"></div>
+        <span class="bar-label">90+天</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <p class="table-title">应收明细</p>
+      <span class="table-info">共 12 条记录</span>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>客户/订单号</th>
+            <th>应收金额</th>
+            <th>未回款金额</th>
+            <th>账龄</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ABC Trading<br>PL-2026-0001</td>
+            <td>$50,000</td>
+            <td>$50,000</td>
+            <td>95天</td>
+            <td class="status-overdue">超期</td>
+            <td>
+              <div class="action-icons">
+                <div class="action-icon remind" onclick="openRemindModal('PL-2026-0001','customer@example.com')"><i class="fas fa-bell"></i></div>
+                <div class="action-icon reconcile" onclick="window.parent.loadPage('pages/finance-reconcile.html')"><i class="fas fa-file-text"></i></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>XYZ Fashion<br>PL-2026-0002</td>
+            <td>$35,000</td>
+            <td>$35,000</td>
+            <td>45天</td>
+            <td class="status-normal">正常</td>
+            <td>
+              <div class="action-icons">
+                <div class="action-icon remind" onclick="openRemindModal('PL-2026-0001','customer@example.com')"><i class="fas fa-bell"></i></div>
+                <div class="action-icon reconcile" onclick="window.parent.loadPage('pages/finance-reconcile.html')"><i class="fas fa-file-text"></i></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>Euro Textile<br>PL-2026-0003</td>
+            <td>$120,000</td>
+            <td>$80,000</td>
+            <td>20天</td>
+            <td class="status-normal">正常</td>
+            <td>
+              <div class="action-icons">
+                <div class="action-icon remind" onclick="openRemindModal('PL-2026-0001','customer@example.com')"><i class="fas fa-bell"></i></div>
+                <div class="action-icon reconcile" onclick="window.parent.loadPage('pages/finance-reconcile.html')"><i class="fas fa-file-text"></i></div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal" id="remindModal">
+    <div class="modal-content">
+      <h3 class="modal-title">发送催款通知</h3>
+      <div class="channel-btns">
+        <button class="channel-btn active email">
+          <i class="fas fa-envelope"></i>
+          <span>邮件</span>
+        </button>
+        <button class="channel-btn wechat">
+          <i class="fab fa-weixin"></i>
+          <span>企微</span>
+        </button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">收件人邮箱</label>
+        <input type="email" class="form-input" id="remindEmail" placeholder="customer@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">主题</label>
+        <input type="text" class="form-input" id="remindSubject" value="关于订单款项催收通知">
+      </div>
+      <div class="form-group">
+        <label class="form-label">内容</label>
+        <textarea class="form-textarea" id="remindBody">尊敬的客户，
+
+您好！关于贵司订单的款项，目前已逾期，请尽快安排付款。
+
+如有疑问请随时联系我们。
+
+此致
+捷隆纺织财务部</textarea>
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeRemindModal()">取消</button>
+        <button class="btn-full primary" onclick="sendReminder()"><i class="fas fa-envelope"></i> 邮件发送</button>
+        <button class="btn-full" style="background:#07c160;color:#fff" onclick="copyAndWechat()"><i class="fab fa-weixin"></i> 复制+企微</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 应收账款看板 - 数据加载
+    let paymentsData = [];
+
+    async function loadARData() {
+      if (!window.DataService) {
+        console.warn('⚠️ DataService 不可用，使用静态数据');
+        return;
+      }
+
+      try {
+        // 加载回款数据
+        const { data: payments } = await DataService.finance.listPayments();
+        paymentsData = payments || [];
+
+        // 加载统计
+        const { data: stats } = await DataService.dashboard.getStats();
+
+        // 更新统计卡片
+        updateStatCards(stats, paymentsData);
+      } catch (e) {
+        console.warn('⚠️ 数据加载失败:', e.message);
+      }
+    }
+
+    function updateStatCards(stats, payments) {
+      if (!stats) return;
+
+      // 更新统计数字
+      const statValues = document.querySelectorAll('.stat-value');
+      if (statValues.length >= 3) {
+        // 总应收 = 未核销回款总金额
+        const totalAR = payments
+          .filter(p => !p.verified)
+          .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        statValues[0].textContent = '$' + totalAR.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+        // 逾期笔数
+        const overdue = payments.filter(p => !p.verified).length;
+        statValues[1].textContent = overdue;
+
+        // 本月回款
+        const thisMonth = new Date().getMonth();
+        const monthlyTotal = payments
+          .filter(p => p.verified && new Date(p.verified_at || p.payment_date).getMonth() === thisMonth)
+          .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        statValues[2].textContent = '$' + monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      }
+    }
+
+    var currentRemindOrder = '';
+
+    function openRemindModal(plNumber, customerEmail) {
+      currentRemindOrder = plNumber || '';
+      document.getElementById('remindModal').classList.add('active');
+      if (customerEmail) document.getElementById('remindEmail').value = customerEmail;
+      if (plNumber) {
+        document.getElementById('remindSubject').value = '关于' + plNumber + '款项催收通知';
+        document.getElementById('remindBody').value = '尊敬的客户，\n\n您好！关于贵司订单 ' + plNumber + ' 的款项，目前已逾期，请尽快安排付款。\n\n如有疑问请随时联系我们。\n\n此致\n捷隆纺织财务部';
+      }
+    }
+    function closeRemindModal() {
+      document.getElementById('remindModal').classList.remove('active');
+    }
+
+    function sendReminder() {
+      var email = document.getElementById('remindEmail').value.trim();
+      var subject = document.getElementById('remindSubject').value.trim();
+      var body = document.getElementById('remindBody').value.trim();
+
+      if (!email) { alert('请输入收件人邮箱'); return; }
+      if (!subject) { alert('请输入邮件主题'); return; }
+
+      // 1. 打开默认邮件客户端
+      var mailto = 'mailto:' + encodeURIComponent(email)
+        + '?subject=' + encodeURIComponent(subject)
+        + '&body=' + encodeURIComponent(body);
+      window.open(mailto, '_blank');
+
+      // 2. 保存催款记录
+      var record = {
+        id: Date.now(),
+        orderNo: currentRemindOrder,
+        email: email,
+        subject: subject,
+        time: new Date().toISOString()
+      };
+      var reminders = JSON.parse(localStorage.getItem('payment_reminders') || '[]');
+      reminders.unshift(reminders);
+      localStorage.setItem('payment_reminders', JSON.stringify(reminders));
+
+      // 3. 同步到 Supabase
+      if (window.DataService) {
+        try {
+          DataService.notifications.create({
+            user_id: 'system',
+            title: '催款通知已发送',
+            message: '已向 ' + email + ' 发送催款邮件（' + subject + '）',
+            type: 'payment_alert'
+          });
+        } catch(e) {}
+      }
+
+      closeRemindModal();
+      if (typeof Toast !== 'undefined') Toast.success('邮件客户端已打开，请点击发送');
+      else alert('邮件已生成，请在邮件客户端中点击发送');
+    }
+
+    function copyAndWechat() {
+      var subject = document.getElementById('remindSubject').value.trim();
+      var body = document.getElementById('remindBody').value.trim();
+      var fullText = subject + '\n\n' + body;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullText).then(function() {
+          if (typeof Toast !== 'undefined') Toast.success('已复制！请打开企业微信粘贴发送');
+        }).catch(function() {
+          fallbackCopy(fullText);
+        });
+      } else {
+        fallbackCopy(fullText);
+      }
+    }
+
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); if (typeof Toast !== 'undefined') Toast.success('已复制！请打开企业微信粘贴发送'); }
+      catch(e) { prompt('请手动复制以下内容:', text); }
+      document.body.removeChild(ta);
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', loadARData);
+  </script>
+</body>
+</html>

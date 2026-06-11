@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工厂档案 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .search-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+    }
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #f9fafb;
+    }
+    .action-btn {
+      padding: 10px 16px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #f3f4f6;
+      overflow-x: auto;
+    }
+    .filter-tag {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid #e5e7eb;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+    .filter-tag.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    .factory-list {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .factory-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .factory-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .factory-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .factory-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .edit-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      cursor: pointer;
+    }
+    .rating-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .rating-item {
+      flex: 1;
+    }
+    .rating-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .rating-stars {
+      display: flex;
+      gap: 2px;
+    }
+    .star {
+      font-size: 14px;
+    }
+    .star.filled {
+      color: #fbbf24;
+    }
+    .star.empty {
+      color: #e5e7eb;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 8px;
+      border-top: 1px solid #f3f4f6;
+    }
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .info-item i {
+      font-size: 11px;
+    }
+    .info-value {
+      font-weight: 500;
+      color: #374151;
+    }
+    .drawer {
+      position: fixed;
+      right: -100%;
+      top: 0;
+      bottom: 0;
+      width: 90%;
+      background: white;
+      z-index: 1000;
+      transition: right 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+    .drawer.active {
+      right: 0;
+    }
+    .drawer-header {
+      padding: 16px;
+      background: #f9fafb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .drawer-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .drawer-content {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .detail-section {
+      margin-bottom: 20px;
+    }
+    .detail-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 12px 0;
+    }
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+    .detail-label {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .detail-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: #1f2937;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .history-item {
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-info {
+      flex: 1;
+    }
+    .history-order {
+      font-size: 14px;
+      font-weight: 600;
+      color: #3b82f6;
+      margin: 0 0 4px 0;
+    }
+    .history-date {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .history-status {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .history-status.success {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .history-status.warning {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+    .overlay.active {
+      display: block;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .btn-section {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-full {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .btn-full.primary {
+      background: #3b82f6;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">工厂档案</h1>
+    <p class="header-subtitle">管理合作工厂信息</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="search-input" placeholder="搜索工厂名称...">
+    <button class="action-btn" onclick="openAddModal()">
+      <i class="fas fa-plus"></i> 新增
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-tag active">全部</span>
+    <span class="filter-tag">高评分</span>
+    <span class="filter-tag">合作3年以上</span>
+    <span class="filter-tag">待评估</span>
+  </div>
+
+  <div class="factory-list">
+    <div class="factory-card" onclick="openDetailDrawer()">
+      <div class="factory-header">
+        <h3 class="factory-name">杭州纺织厂</h3>
+        <div class="edit-icon" onclick="event.stopPropagation(); openEditModal()">
+          <i class="fas fa-edit"></i>
+        </div>
+      </div>
+      <div class="rating-row">
+        <div class="rating-item">
+          <div class="rating-label">交期评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+          </div>
+        </div>
+        <div class="rating-item">
+          <div class="rating-label">质量评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star empty">★</i>
+          </div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-item">
+          <i class="fas fa-file-text"></i>
+          <span class="info-value">28</span>
+        </div>
+        <div class="info-item">
+          <i class="fas fa-user"></i>
+          <span class="info-value">张经理</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="factory-card" onclick="openDetailDrawer()">
+      <div class="factory-header">
+        <h3 class="factory-name">宁波织造厂</h3>
+        <div class="edit-icon" onclick="event.stopPropagation(); openEditModal()">
+          <i class="fas fa-edit"></i>
+        </div>
+      </div>
+      <div class="rating-row">
+        <div class="rating-item">
+          <div class="rating-label">交期评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star empty">★</i>
+          </div>
+        </div>
+        <div class="rating-item">
+          <div class="rating-label">质量评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+          </div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-item">
+          <i class="fas fa-file-text"></i>
+          <span class="info-value">35</span>
+        </div>
+        <div class="info-item">
+          <i class="fas fa-user"></i>
+          <span class="info-value">李厂长</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="factory-card" onclick="openDetailDrawer()">
+      <div class="factory-header">
+        <h3 class="factory-name">苏州印染厂</h3>
+        <div class="edit-icon" onclick="event.stopPropagation(); openEditModal()">
+          <i class="fas fa-edit"></i>
+        </div>
+      </div>
+      <div class="rating-row">
+        <div class="rating-item">
+          <div class="rating-label">交期评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star empty">★</i>
+            <i class="star empty">★</i>
+          </div>
+        </div>
+        <div class="rating-item">
+          <div class="rating-label">质量评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star empty">★</i>
+          </div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-item">
+          <i class="fas fa-file-text"></i>
+          <span class="info-value">15</span>
+        </div>
+        <div class="info-item">
+          <i class="fas fa-user"></i>
+          <span class="info-value">王总</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="factory-card" onclick="openDetailDrawer()">
+      <div class="factory-header">
+        <h3 class="factory-name">温州印染厂</h3>
+        <div class="edit-icon" onclick="event.stopPropagation(); openEditModal()">
+          <i class="fas fa-edit"></i>
+        </div>
+      </div>
+      <div class="rating-row">
+        <div class="rating-item">
+          <div class="rating-label">交期评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star empty">★</i>
+            <i class="star empty">★</i>
+          </div>
+        </div>
+        <div class="rating-item">
+          <div class="rating-label">质量评分</div>
+          <div class="rating-stars">
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star filled">★</i>
+            <i class="star empty">★</i>
+          </div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-item">
+          <i class="fas fa-file-text"></i>
+          <span class="info-value">12</span>
+        </div>
+        <div class="info-item">
+          <i class="fas fa-user"></i>
+          <span class="info-value">陈经理</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer" id="detailDrawer">
+    <div class="drawer-header">
+      <h3 class="drawer-title">杭州纺织厂</h3>
+      <div class="close-btn" onclick="closeDetailDrawer()">
+        <i class="fas fa-times"></i>
+      </div>
+    </div>
+    <div class="drawer-content">
+      <div class="detail-section">
+        <h4 class="detail-title">基本信息</h4>
+        <div class="detail-list">
+          <div class="detail-row">
+            <span class="detail-label">地址</span>
+            <span class="detail-value">杭州市萧山区工业园区</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">联系人</span>
+            <span class="detail-value">张经理</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">电话</span>
+            <span class="detail-value">0571-8888 8888</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">合作年限</span>
+            <span class="detail-value">5年</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4 class="detail-title">评分信息</h4>
+        <div class="detail-list">
+          <div class="detail-row">
+            <span class="detail-label">交期评分</span>
+            <span class="detail-value">
+              <div class="rating-stars">
+                <i class="star filled">★</i>
+                <i class="star filled">★</i>
+                <i class="star filled">★</i>
+                <i class="star filled">★</i>
+                <i class="star filled">★</i>
+              </div>
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">质量评分</span>
+            <span class="detail-value">
+              <div class="rating-stars">
+                <i class="star filled">★</i>
+                <i class="star filled">★</i>
+                <i class="star filled">★</i>
+                <i class="star filled">★</i>
+                <i class="star empty">★</i>
+              </div>
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">合作订单数</span>
+            <span class="detail-value">28</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4 class="detail-title">合作历史订单</h4>
+        <div class="history-list">
+          <div class="history-item">
+            <div class="history-info">
+              <p class="history-order">PL-2026-0001</p>
+              <p class="history-date">2026-06-01</p>
+            </div>
+            <span class="history-status success">按时完成</span>
+          </div>
+          <div class="history-item">
+            <div class="history-info">
+              <p class="history-order">PL-2026-0005</p>
+              <p class="history-date">2026-05-15</p>
+            </div>
+            <span class="history-status success">按时完成</span>
+          </div>
+          <div class="history-item">
+            <div class="history-info">
+              <p class="history-order">PL-2026-0008</p>
+              <p class="history-date">2026-05-01</p>
+            </div>
+            <span class="history-status warning">延期1天</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="closeDetailDrawer()"></div>
+
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <h3 class="modal-title">新增工厂</h3>
+      <div class="form-group">
+        <label class="form-label">工厂名称</label>
+        <input type="text" class="form-input" placeholder="请输入工厂名称">
+      </div>
+      <div class="form-group">
+        <label class="form-label">地址</label>
+        <input type="text" class="form-input" placeholder="请输入地址">
+      </div>
+      <div class="form-group">
+        <label class="form-label">联系人</label>
+        <input type="text" class="form-input" placeholder="请输入联系人">
+      </div>
+      <div class="form-group">
+        <label class="form-label">电话</label>
+        <input type="text" class="form-input" placeholder="请输入电话">
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeAddModal()">取消</button>
+        <button class="btn-full primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <h3 class="modal-title">编辑工厂</h3>
+      <div class="form-group">
+        <label class="form-label">工厂名称</label>
+        <input type="text" class="form-input" value="杭州纺织厂">
+      </div>
+      <div class="form-group">
+        <label class="form-label">交期评分</label>
+        <div class="rating-stars" style="gap: 8px; font-size: 24px;">
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star empty" style="cursor: pointer;">★</i>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">质量评分</label>
+        <div class="rating-stars" style="gap: 8px; font-size: 24px;">
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star filled" style="cursor: pointer;">★</i>
+          <i class="star filled" style="cursor: pointer;">★</i>
+        </div>
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeEditModal()">取消</button>
+        <button class="btn-full primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openDetailDrawer() {
+      document.getElementById('detailDrawer').classList.add('active');
+      document.getElementById('overlay').classList.add('active');
+    }
+    function closeDetailDrawer() {
+      document.getElementById('detailDrawer').classList.remove('active');
+      document.getElementById('overlay').classList.remove('active');
+    }
+    function openAddModal() {
+      document.getElementById('addModal').classList.add('active');
+    }
+    function closeAddModal() {
+      document.getElementById('addModal').classList.remove('active');
+    }
+    function openEditModal() {
+      document.getElementById('editModal').classList.add('active');
+    }
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+  </script>
+</body>
+</html>

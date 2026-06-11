@@ -1,0 +1,11 @@
+test_*.docx
+P506_*.docx
+uploaded_plan.pdf
+*.pdf
+fill_template.py
+fill_service.log
+start.bat
+nohup.out
+*.pyc
+__pycache__/
+.DS_Store

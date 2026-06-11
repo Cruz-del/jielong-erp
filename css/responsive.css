@@ -1,0 +1,364 @@
+/**
+ * 捷隆纺织 - 响应式和无障碍支持样式
+ */
+
+/* 基础响应式断点 */
+/* 移动端优先 */
+
+/* 平板（768px - 1024px） */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* 双栏布局优化 */
+  .two-column-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+  /* 表格横向滚动 */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 图表可触摸交互 */
+  .chart-interactive {
+    min-height: 250px;
+  }
+  
+  /* 左侧菜单收缩 */
+  .sidebar-menu {
+    width: 60px;
+  }
+  
+  .sidebar-menu .menu-text {
+    display: none;
+  }
+}
+
+/* 桌面端（>= 1024px） */
+@media (min-width: 1024px) {
+  /* 三栏布局 */
+  .three-column-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr 300px;
+    gap: 20px;
+  }
+  
+  /* 老板驾驶舱多图表并排 */
+  .boss-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  
+  /* 表格列宽可拖动 */
+  .resizable-table th {
+    position: relative;
+    cursor: col-resize;
+  }
+  
+  .resizable-table th::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+  }
+  
+  /* 图表区域 */
+  .chart-container {
+    min-height: 300px;
+  }
+}
+
+/* 移动端优化（< 768px） */
+@media (max-width: 767px) {
+  /* 按钮最小尺寸 */
+  button,
+  .btn,
+  .action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+    gap: 8px;
+  }
+  
+  /* 文字大小 */
+  body {
+    font-size: 14px;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-size: 18px;
+  }
+  
+  /* 卡片列表 */
+  .order-card,
+  .data-card {
+    padding: 12px;
+    margin: 8px 0;
+  }
+  
+  /* 隐藏次要字段 */
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  /* 汉堡菜单 */
+  .hamburger-menu {
+    display: block;
+  }
+  
+  .sidebar-menu {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    bottom: 0;
+    width: 80%;
+    background: white;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+  }
+  
+  .sidebar-menu.active {
+    left: 0;
+  }
+  
+  /* AI对话输入框固定底部 */
+  .input-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px;
+    background: white;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+    z-index: 100;
+  }
+  
+  .chat-container {
+    padding-bottom: 80px;
+  }
+  
+  /* 表单堆叠 */
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .form-row .form-group {
+    width: 100%;
+  }
+  
+  /* 模态框全屏 */
+  .modal-content {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: 20px;
+  }
+  
+  /* 二维码分享 */
+  .qr-share {
+    display: block;
+    margin: 16px 0;
+  }
+}
+
+/* 无障碍增强 */
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+  /* 增加边框 */
+  button,
+  input,
+  select,
+  textarea {
+    border: 2px solid currentColor;
+  }
+  
+  /* 移除阴影 */
+  * {
+    box-shadow: none !important;
+  }
+  
+  /* 增强颜色对比 */
+  .text-muted {
+    color: #4a4a4a !important;
+  }
+}
+
+/* 减少动画（尊重用户偏好） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 焦点可见性增强 */
+@media (pointer: coarse) {
+  /* 触摸设备增加焦点区域 */
+  button,
+  a,
+  input,
+  select {
+    min-target-size: 44px;
+  }
+}
+
+/* 打印样式 */
+@media print {
+  /* 隐藏导航和交互元素 */
+  .bottom-bar,
+  .sidebar-menu,
+  .action-bar,
+  .filter-section,
+  button:not(.print-show) {
+    display: none !important;
+  }
+  
+  /* 优化打印布局 */
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: black;
+    background: white;
+  }
+  
+  .page-break {
+    page-break-before: always;
+  }
+  
+  a {
+    color: black;
+    text-decoration: underline;
+  }
+  
+  img {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+}
+
+/* 动画关键帧 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 触摸反馈 */
+@media (pointer: coarse) {
+  button:active,
+  .btn:active {
+    transform: scale(0.95);
+    transition: transform 0.1s;
+  }
+  
+  .order-card:active {
+    background: #f0f0f0;
+  }
+}
+
+/* 屏幕阅读器专用 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 跳过链接 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 10px 20px;
+  background: #3b82f6;
+  color: white;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+  font-weight: 500;
+}
+
+.skip-link:focus {
+  left: 0;
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* 焦点指示器 */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* 禁用焦点环（当不需要时） */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* 通知ARIA实时区域 */
+[aria-live] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+[aria-live].visible {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}

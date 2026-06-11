@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设计生产单 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="../js/supabase-storage.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #86efac;
+    }
+    .form-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    .form-row label {
+      width: 100px;
+      font-weight: 500;
+      color: #374151;
+      font-size: 14px;
+    }
+    .form-row .form-value {
+      flex: 1;
+    }
+    .form-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .checkbox-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+    }
+    .checkbox-item label {
+      width: auto;
+      font-weight: 400;
+    }
+    .form-textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    .form-textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      z-index: 50;
+    }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      color: white;
+    }
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+    
+    /* PDF 预览样式 */
+    #pdfPreview {
+      display: none;
+      background: white;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .pdf-wrapper {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .pdf-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+      background: #22c55e;
+      padding: 12px;
+      margin: -20px -20px 20px -20px;
+    }
+    .pdf-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      border: 1px solid #000;
+    }
+    .pdf-table th, .pdf-table td {
+      border: 1px solid #000;
+      padding: 6px 8px;
+    }
+    .pdf-table th {
+      background: #86efac;
+      font-weight: bold;
+      text-align: left;
+    }
+    .quality-section {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px solid #000;
+      background: #fff3f3;
+    }
+    .quality-title {
+      font-weight: bold;
+      color: #dc2626;
+      margin-bottom: 8px;
+    }
+    .footer-note {
+      margin-top: 15px;
+      font-size: 11px;
+      padding-top: 10px;
+      border-top: 1px solid #000;
+    }
+
+    @media (max-width: 600px) {
+      .form-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .form-row label {
+        width: 100%;
+        margin-bottom: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="back-btn" onclick="goBack()">
+      <i class="fas fa-arrow-left"></i>
+    </div>
+    <h1 class="header-title">设计生产单</h1>
+  </div>
+
+  <div class="container">
+    <!-- 基本信息 -->
+    <div class="form-section">
+      <div class="section-title">基本信息</div>
+      <div class="form-row"><label>订单号</label><div class="form-value"><input type="text" class="form-input" id="orderNo" placeholder="如：P506"></div></div>
+      <div class="form-row"><label>订单日期</label><div class="form-value"><input type="date" class="form-input" id="orderDate"></div></div>
+      <div class="form-row"><label>品名</label><div class="form-value"><input type="text" class="form-input" id="productName" placeholder="如：涤纶分散双面仿蜡染布"></div></div>
+      <div class="form-row"><label>商标</label><div class="form-value"><input type="text" class="form-input" id="brand" placeholder="如：FRECHI TEX"></div></div>
+      <div class="form-row"><label>规格</label><div class="form-value"><input type="text" class="form-input" id="specification" placeholder="如：全渗透"></div></div>
+      <div class="form-row"><label>坯布克重</label><div class="form-value"><input type="text" class="form-input" id="grayFabricWeight" placeholder="如：85gsm"></div></div>
+      <div class="form-row"><label>成品幅宽</label><div class="form-value"><input type="text" class="form-input" id="finishedWidth" placeholder="如：115cm-115.5cm"></div></div>
+      <div class="form-row"><label>成品克重</label><div class="form-value"><input type="text" class="form-input" id="finishedWeight" placeholder="如：95gsm"></div></div>
+    </div>
+
+    <!-- 生产信息 -->
+    <div class="form-section">
+      <div class="section-title">生产信息</div>
+      <div class="form-row"><label>坯布纱支</label><div class="form-value"><input type="text" class="form-input" id="yarnCount" placeholder="如：棉30弹力"></div></div>
+      <div class="form-row"><label>花型数量</label><div class="form-value"><input type="text" class="form-input" id="patternCount" placeholder="如：共30个花"></div></div>
+      <div class="form-row"><label>投产包数</label><div class="form-value"><input type="text" class="form-input" id="productionBags" placeholder="如：566包 (花型均分)"></div></div>
+      <div class="form-row"><label>码尺</label><div class="form-value"><input type="text" class="form-input" id="yardage" placeholder="如：共30个花"></div></div>
+      <div class="form-row"><label>布边宽度</label><div class="form-value"><input type="text" class="form-input" id="edgeWidth" placeholder="如：0.5-0.6CM"></div></div>
+      <div class="form-row"><label>船样</label><div class="form-value"><input type="text" class="form-input" id="shipSamples" placeholder="如：8套码样"></div></div>
+      <div class="form-row"><label>印厂</label><div class="form-value"><input type="text" class="form-input" id="printFactory" placeholder="如：华腾印染"></div></div>
+    </div>
+
+    <!-- 包装信息 -->
+    <div class="form-section">
+      <div class="section-title">包装信息</div>
+      <div class="form-row"><label>包装方式</label><div class="form-value"><input type="text" class="form-input" id="packingMethod" placeholder="如：独花独色"></div></div>
+      <div class="form-row"><label>打包方式</label><div class="form-value"><input type="text" class="form-input" id="packagingType" placeholder="如：7道打包绳"></div></div>
+      <div class="form-row"><label>包装要求</label><div class="form-value"><input type="text" class="form-input" id="packingRequirement" placeholder="如：开剪处布头折到布里面"></div></div>
+    </div>
+
+    <!-- 开剪要求 -->
+    <div class="form-section">
+      <div class="section-title">开剪要求</div>
+      <div class="checkbox-group">
+        <div class="checkbox-item"><input type="checkbox" id="cut4"><label for="cut4">4码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="cut6"><label for="cut6">6码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="cut10"><label for="cut10">10码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="cut12"><label for="cut12">12码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="cutOther"><label for="cutOther">其他:</label></div>
+      </div>
+    </div>
+
+    <!-- 套袋要求 -->
+    <div class="form-section">
+      <div class="section-title">套袋要求</div>
+      <div class="checkbox-group">
+        <div class="checkbox-item"><input type="checkbox" id="bag6"><label for="bag6">6码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="bag12"><label for="bag12">12码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="bag50"><label for="bag50">50码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="bag60"><label for="bag60">60码</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="bagOther"><label for="bagOther">其他:</label></div>
+      </div>
+    </div>
+
+    <!-- 外袋要求 -->
+    <div class="form-section">
+      <div class="section-title">外袋要求</div>
+      <div class="checkbox-group">
+        <div class="checkbox-item"><input type="checkbox" id="outer600"><label for="outer600">600码常规包</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="outer300"><label for="outer300">300码短包</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="outerCarton"><label for="outerCarton">纸箱包装</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="outer6"><label for="outer6">6码</label></div>
+      </div>
+    </div>
+
+    <!-- 其他要求 -->
+    <div class="form-section">
+      <div class="section-title">其他要求</div>
+      <div class="checkbox-group">
+        <div class="checkbox-item"><input type="checkbox" id="otherLightPress"><label for="otherLightPress">轻压光</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="otherEmboss"><label for="otherEmboss">压花</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="otherRibbon"><label for="otherRibbon">加丝带</label></div>
+        <div class="checkbox-item"><input type="checkbox" id="otherOther"><label for="otherOther">其他:</label></div>
+      </div>
+    </div>
+
+    <!-- 外包装 -->
+    <div class="form-section">
+      <div class="section-title">外包装</div>
+      <div class="form-row"><label>数量</label><div class="form-value"><input type="text" class="form-input" id="quantity" placeholder="如：600 YDS"></div></div>
+      <div class="form-row"><label>DES NO.</label><div class="form-value"><input type="text" class="form-input" id="desNo" placeholder="如：01"></div></div>
+      <div class="form-row"><label>BALE NO.</label><div class="form-value"><input type="text" class="form-input" id="baleNo" placeholder="如：01 … 10"></div></div>
+      <div class="form-row"><label>外包装</label><div class="form-value"><input type="text" class="form-input" id="outerPackaging" placeholder="如：一体编织袋+不干胶唛头"></div></div>
+    </div>
+
+    <!-- 质量要求 -->
+    <div class="form-section">
+      <div class="section-title">质量要求</div>
+      <textarea class="form-textarea" id="qualityRequirements" placeholder="1: 印花不能错版露白,要清晰有层次感,发丝边根据不同花型风格调整。
+2: 花型主色要饱满,亮丽,浓度与样品保持一致,线条,线条和发丝要印制精细,渗透好。
+3: 边字印制清晰,以最终确认稿为准。
+4: 手感按照我司手感样,整柜手感保持一致。
+5: 颜色要鲜艳饱满,严格按照色样,如色样为纯棉饱满度达不到,及时协商解决。
+6: 全部花型颜色按照布样生产"></textarea>
+    </div>
+
+    <!-- 备注 -->
+    <div class="form-section">
+      <div class="section-title">备注</div>
+      <textarea class="form-textarea" id="remarks" placeholder="*具体商标标 商标样 外包 唛头 等参照附件,生产时一定通知我们:付 17663602099"></textarea>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="action-bar" style="flex-wrap:wrap;gap:8px">
+      <button class="btn btn-primary" onclick="saveDraft()"><i class="fas fa-save"></i> 保存草稿</button>
+      <button class="btn btn-success" onclick="downloadWord()"><i class="fas fa-file-word"></i> 下载 Word</button>
+      <button class="btn btn-secondary" onclick="generatePDF()"><i class="fas fa-print"></i> 打印</button>
+      <a href="https://uujlzxidillcvqjxmqnj.supabase.co/storage/v1/object/public/documents/P506_template.docx" target="_blank" class="btn btn-secondary" style="text-decoration:none"><i class="fas fa-download"></i> 下载原始模板</a>
+    </div>
+  </div>
+
+  <!-- PDF 预览区域 -->
+  <div id="pdfPreview">
+    <div class="pdf-wrapper">
+      <div class="pdf-title">潍坊捷隆纺织有限公司生产单</div>
+      <table class="pdf-table" id="pdfContent"></table>
+    </div>
+  </div>
+
+  <script>
+    function goBack() {
+      window.history.back();
+    }
+
+    function saveDraft() {
+      const formData = {
+        orderNo: document.getElementById('orderNo').value,
+        orderDate: document.getElementById('orderDate').value,
+        productName: document.getElementById('productName').value,
+        brand: document.getElementById('brand').value,
+        specification: document.getElementById('specification').value,
+        grayFabricWeight: document.getElementById('grayFabricWeight').value,
+        finishedWidth: document.getElementById('finishedWidth').value,
+        finishedWeight: document.getElementById('finishedWeight').value,
+        patternCount: document.getElementById('patternCount').value,
+        productionBags: document.getElementById('productionBags').value,
+        yardage: document.getElementById('yardage').value,
+        edgeWidth: document.getElementById('edgeWidth').value,
+        shipSamples: document.getElementById('shipSamples').value,
+        printFactory: document.getElementById('printFactory').value,
+        packingMethod: document.getElementById('packingMethod').value,
+        packagingType: document.getElementById('packagingType').value,
+        packingRequirement: document.getElementById('packingRequirement').value,
+        cut4: document.getElementById('cut4').checked,
+        cut6: document.getElementById('cut6').checked,
+        cut10: document.getElementById('cut10').checked,
+        cut12: document.getElementById('cut12').checked,
+        cutOther: document.getElementById('cutOther').checked,
+        bag6: document.getElementById('bag6').checked,
+        bag12: document.getElementById('bag12').checked,
+        bag50: document.getElementById('bag50').checked,
+        bag60: document.getElementById('bag60').checked,
+        bagOther: document.getElementById('bagOther').checked,
+        outer600: document.getElementById('outer600').checked,
+        outer300: document.getElementById('outer300').checked,
+        outerCarton: document.getElementById('outerCarton').checked,
+        outer6: document.getElementById('outer6').checked,
+        otherLightPress: document.getElementById('otherLightPress').checked,
+        otherEmboss: document.getElementById('otherEmboss').checked,
+        otherRibbon: document.getElementById('otherRibbon').checked,
+        otherOther: document.getElementById('otherOther').checked,
+        yarnCount: document.getElementById('yarnCount').value,
+        quantity: document.getElementById('quantity').value,
+        desNo: document.getElementById('desNo').value,
+        baleNo: document.getElementById('baleNo').value,
+        outerPackaging: document.getElementById('outerPackaging').value,
+        qualityRequirements: document.getElementById('qualityRequirements').value,
+        remarks: document.getElementById('remarks').value
+      };
+      localStorage.setItem('designProductionDraft', JSON.stringify(formData));
+      alert('✅ 草稿已保存！');
+    }
+
+    function buildTemplate() {
+      var ordNo = document.getElementById('orderNo').value;
+      if (!ordNo) { alert('请填写订单编号'); return null; }
+
+      function v(id) { return (document.getElementById(id) && document.getElementById(id).value) || ''; }
+      function getChecked(prefix) {
+        var items = [];
+        document.querySelectorAll('input[id^="' + prefix + '"]').forEach(function(el) {
+          if (el.checked) {
+            var txt = el.nextElementSibling ? el.nextElementSibling.textContent.trim() : '';
+            if (txt) items.push(txt);
+          }
+        });
+        return items.join('  ') || '';
+      }
+
+      var cutReq = getChecked('cut');
+      var bagReq = getChecked('bag');
+      var outerReq = getChecked('outer');
+      var otherReq = getChecked('other');
+
+      return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>P' + ordNo + '</title>' +
+'<style>' +
+  '*{box-sizing:border-box;margin:0;padding:0}' +
+  'body{font-family:"PingFang SC","Microsoft YaHei","SimHei",sans-serif;font-size:11px;color:#000;padding:10px 12px;line-height:1.5}' +
+  'h1{text-align:center;font-size:14px;font-weight:bold;margin-bottom:2px}' +
+  'table{width:100%;border-collapse:collapse;margin-bottom:4px}' +
+  'td{border:1px solid #000;padding:3px 5px;font-size:10px;vertical-align:top}' +
+  'td.lbl{background:#f0f0f0;font-weight:bold;text-align:center;width:14%}' +
+  'td.vl{width:36%}' +
+  'td.mid{width:14%;background:#f0f0f0;font-weight:bold;text-align:center}' +
+  '@media print{body{padding:3mm 5mm}}' +
+'</style></head><body>' +
+'<h1>潍坊捷隆纺织有限公司 生产计划单</h1>' +
+'<table>' +
+'<tr><td class="lbl">订单编号</td><td class="vl">' + ordNo + '</td><td class="mid">下单日期</td><td class="vl">' + v('orderDate') + '</td></tr>' +
+'<tr><td class="lbl">品名</td><td class="vl">' + v('productName') + '</td><td class="mid">规格</td><td class="vl">' + v('specification') + '</td></tr>' +
+'<tr><td class="lbl">商标</td><td class="vl">' + v('brand') + '</td><td class="mid">成品门幅</td><td class="vl">' + v('finishedWidth') + '</td></tr>' +
+'<tr><td class="lbl">坯布克重</td><td class="vl">' + v('grayFabricWeight') + '</td><td class="mid">成品克重</td><td class="vl">' + v('finishedWeight') + '</td></tr>' +
+'<tr><td class="lbl">坯布纱支</td><td class="vl">' + v('yarnCount') + '</td><td class="mid">投料数量</td><td class="vl">' + v('productionBags') + '</td></tr>' +
+'<tr><td class="lbl">幅宽</td><td class="vl">' + v('yardage') + '</td><td class="mid">边线宽度</td><td class="vl">' + v('edgeWidth') + '</td></tr>' +
+'<tr><td class="lbl">卷装</td><td class="vl">' + v('packagingType') + '</td><td class="mid">印染</td><td class="vl">' + v('printFactory') + '</td></tr>' +
+'<tr><td class="lbl">包装方式</td><td class="vl">' + v('packingMethod') + '</td><td class="mid">打包方式</td><td class="vl">' + v('shipSamples') + '</td></tr>' +
+'<tr><td class="lbl">开剪要求</td><td class="vl">' + (cutReq || '4码  6码  10码  12码  其他') + '</td><td class="mid">套袋要求</td><td class="vl">' + (bagReq || '6码  12码  50码  60码  其他') + '</td></tr>' +
+'<tr><td class="lbl">外袋要求</td><td class="vl">' + (outerReq || '600码常袋  300码短袋  纸箱外装') + '</td><td class="mid">其他要求</td><td class="vl">' + (otherReq || '烫头压平  压平  布袋丝带  其他') + '</td></tr>' +
+'<tr><td class="lbl">外包装</td><td colspan="3">' + (v('outerPackaging') || '一体编织袋+不干胶唛头') + '</td></tr>' +
+'<tr><td class="lbl">品质要求</td><td colspan="3">' +
+  (v('qualityRequirements') ||
+    '1、印花不能出现露底，要求具有层次感，花型花边根据不同花型风格来定。<br>' +
+    '2、成品颜色要求均匀饱满，浓淡与产前样品一致；花型花边要求印制精细，不能糊掉。<br>' +
+    '3、花型印制前必须经甲方确认给为标准。<br>' +
+    '4、手感按公司手感和客户手感保持一致。<br>' +
+    '5、颜色要求无白芯，严格按色样生产，色差不得超标准，暂不能确定时协商解决。') +
+'</td></tr>' +
+'</table>' +
+'<table>' +
+'<tr><td style="width:50%;padding:8px">' +
+  '<b>ORDER NO.:</b> ' + ordNo + '<br>' +
+  '<b>DES NO.:</b> ' + (v('desNo')||'01') + '<br>' +
+  '<b>QTY:</b> ' + (v('quantity')||'') + '<br>' +
+  '<b>BALE NO.:</b> ' + (v('baleNo')||'01 … 10') +
+'</td>' +
+'<td style="width:50%;padding:8px;font-size:10px">' +
+  '<b>商标</b><br>' + (v('brand')||'FRECHI TEX') + '<br><br>' +
+  '<span style="color:#888">* 此为单位实际重量，实际包装按标厂称重，按标厂实际重量确认并安排</span><br>' +
+  '<span style="color:#888">* 具体商标标、商标样、外包、唛头等参照附件，生产时一定通知我们：付 17663602099</span>' +
+'</td></tr>' +
+'</table>' +
+'<div style="font-size:10px;text-align:center;margin-top:4px">手刮色 / 成品颜色参考</div>' +
+'<div style="font-size:9px;color:#888;text-align:center;margin-top:6px">' + v('remarks') + '</div>' +
+'</body></html>';
+    }
+
+    // ===== 通过本地 Python 或 Supabase Edge Function 填充 =====
+    var FILL_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8002/fill'
+      : 'https://uujlzxidillcvqjxmqnj.supabase.co/functions/v1/fill-template';
+
+    async function generateWordBlob() {
+      var ordNo = document.getElementById('orderNo').value;
+      if (!ordNo) { alert('请填写订单编号'); return null; }
+
+      function v(id) { return (document.getElementById(id) && document.getElementById(id).value) || ''; }
+      function getChecked(prefix) {
+        var items = [];
+        document.querySelectorAll('input[id^=\"' + prefix + '\"]').forEach(function(el) {
+          if (el.checked) { var t = el.nextElementSibling ? el.nextElementSibling.textContent.trim() : ''; if (t) items.push(t); }
+        });
+        return items.join('  ');
+      }
+
+      var jsonData = {
+        orderNo: ordNo, orderDate: v('orderDate'),
+        productName: v('productName'), specification: v('specification'),
+        brand: v('brand'), finishedWidth: v('finishedWidth'),
+        grayFabricWeight: v('grayFabricWeight'), finishedWeight: v('finishedWeight'),
+        yarnCount: v('yarnCount'), productionBags: v('productionBags'),
+        yardage: v('yardage'), edgeWidth: v('edgeWidth'),
+        packagingType: v('packagingType'), printFactory: v('printFactory'),
+        packingMethod: v('packingMethod'), shipSamples: v('shipSamples'),
+        cutRequirements: getChecked('cut') || '4码 6码 10码 12码 其他',
+        bagRequirements: getChecked('bag') || '6码 12码 50码 60码 其他',
+        outerRequirements: getChecked('outer') || '600码常袋 300码短袋 纸箱外装',
+        otherRequirements: getChecked('other') || '烫头压平 压平 布袋丝带 其他',
+        outerPackaging: v('outerPackaging') || '一体编织袋+不干胶唛头',
+        qualityRequirements: v('qualityRequirements') || '全工艺产品颜色按确认样生产',
+        remarks: v('remarks'), quantity: v('quantity'),
+        desNo: v('desNo') || '01', baleNo: v('baleNo') || '01 … 10'
+      };
+
+      try {
+        var resp = await fetch(FILL_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(jsonData)
+        });
+        if (!resp.ok) throw new Error('服务返回 ' + resp.status);
+        return await resp.blob();
+      } catch(e) {
+        alert('生成失败：' + e.message + '\n\n请确保已启动 Python 服务：\npython fill_template.py');
+        console.error(e);
+        return null;
+      }
+    }
+
+    async function downloadWord() {
+      var blob = await generateWordBlob();
+      if (!blob) return;
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'P' + (document.getElementById('orderNo').value || 'order') + '_计划单.docx';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    }
+
+    async function generatePDF() {
+      var blob = await generateWordBlob();
+      if (!blob) return;
+      var url = URL.createObjectURL(blob);
+      var win = window.open(url, '_blank');
+      if (win) {
+        setTimeout(function() { try { win.print(); } catch(e) {} }, 1000);
+      } else {
+        alert('弹窗被拦截，请点「下载 Word」按钮');
+      }
+    }
+
+    function previewPDF() { downloadWord(); }
+
+    // 加载草稿
+    window.addEventListener('DOMContentLoaded', function() {
+      const draft = localStorage.getItem('designProductionDraft');
+      if (draft) {
+        const data = JSON.parse(draft);
+        document.getElementById('orderNo').value = data.orderNo || '';
+        document.getElementById('orderDate').value = data.orderDate || '';
+        document.getElementById('productName').value = data.productName || '';
+        document.getElementById('brand').value = data.brand || '';
+        document.getElementById('specification').value = data.specification || '';
+        document.getElementById('grayFabricWeight').value = data.grayFabricWeight || '';
+        document.getElementById('finishedWidth').value = data.finishedWidth || '';
+        document.getElementById('finishedWeight').value = data.finishedWeight || '';
+        document.getElementById('patternCount').value = data.patternCount || '';
+        document.getElementById('productionBags').value = data.productionBags || '';
+        document.getElementById('yardage').value = data.yardage || '';
+        document.getElementById('edgeWidth').value = data.edgeWidth || '';
+        document.getElementById('shipSamples').value = data.shipSamples || '';
+        document.getElementById('printFactory').value = data.printFactory || '';
+        document.getElementById('packingMethod').value = data.packingMethod || '';
+        document.getElementById('packagingType').value = data.packagingType || '';
+        document.getElementById('packingRequirement').value = data.packingRequirement || '';
+        document.getElementById('yarnCount').value = data.yarnCount || '';
+        document.getElementById('quantity').value = data.quantity || '';
+        document.getElementById('desNo').value = data.desNo || '';
+        document.getElementById('baleNo').value = data.baleNo || '';
+        document.getElementById('outerPackaging').value = data.outerPackaging || '';
+        document.getElementById('qualityRequirements').value = data.qualityRequirements || '';
+        document.getElementById('remarks').value = data.remarks || '';
+        
+        document.getElementById('cut4').checked = data.cut4 || false;
+        document.getElementById('cut6').checked = data.cut6 || false;
+        document.getElementById('cut10').checked = data.cut10 || false;
+        document.getElementById('cut12').checked = data.cut12 || false;
+        document.getElementById('cutOther').checked = data.cutOther || false;
+        document.getElementById('bag6').checked = data.bag6 || false;
+        document.getElementById('bag12').checked = data.bag12 || false;
+        document.getElementById('bag50').checked = data.bag50 || false;
+        document.getElementById('bag60').checked = data.bag60 || false;
+        document.getElementById('bagOther').checked = data.bagOther || false;
+        document.getElementById('outer600').checked = data.outer600 || false;
+        document.getElementById('outer300').checked = data.outer300 || false;
+        document.getElementById('outerCarton').checked = data.outerCarton || false;
+        document.getElementById('outer6').checked = data.outer6 || false;
+        document.getElementById('otherLightPress').checked = data.otherLightPress || false;
+        document.getElementById('otherEmboss').checked = data.otherEmboss || false;
+        document.getElementById('otherRibbon').checked = data.otherRibbon || false;
+        document.getElementById('otherOther').checked = data.otherOther || false;
+      }
+    });
+  </script>
+</body>
+</html>

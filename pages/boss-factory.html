@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工厂绩效排行 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .date-select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+    }
+    .table-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .table-info {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .data-table tr.low-score {
+      background: #fff5f5;
+    }
+    .rank {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .rank.top {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    .score-bar {
+      width: 60px;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+    .score-fill.high {
+      background: #10b981;
+    }
+    .score-fill.medium {
+      background: #f59e0b;
+    }
+    .score-fill.low {
+      background: #dc2626;
+    }
+    .score-value {
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .score-value.low {
+      color: #dc2626;
+    }
+    .chart-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .chart-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 16px 0;
+    }
+    .chart-placeholder {
+      height: 160px;
+      background: #f9fafb;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-placeholder i {
+      font-size: 36px;
+      color: #9ca3af;
+      opacity: 0.5;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: flex-end;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 24px;
+      width: 100%;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .factory-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .info-item {
+      background: #f9fafb;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .info-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0 0 4px 0;
+    }
+    .info-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0;
+    }
+    .history-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 12px 0;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .history-item {
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-info {
+      flex: 1;
+    }
+    .history-order {
+      font-size: 14px;
+      font-weight: 600;
+      color: #3b82f6;
+      margin: 0 0 4px 0;
+    }
+    .history-date {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .history-status {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .history-status.on-time {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .history-status.delay {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">工厂绩效排行</h1>
+    <p class="header-subtitle">评估工厂综合表现</p>
+  </div>
+
+  <div class="filter-bar">
+    <select class="date-select">
+      <option>近3个月</option>
+      <option>近半年</option>
+      <option>近一年</option>
+    </select>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <p class="table-title">工厂排行</p>
+      <span class="table-info">共 12 家合作工厂</span>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>工厂名称</th>
+            <th>交期达成率</th>
+            <th>质量合格率</th>
+            <th>订单数</th>
+            <th>综合评分</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="rank top">1</span></td>
+            <td onclick="openFactoryDetail()" style="cursor: pointer; color: #3b82f6; font-weight: 600;">杭州纺织厂</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill high" style="width: 95%;"></div>
+              </div>
+              <span class="score-value">95%</span>
+            </td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill high" style="width: 98%;"></div>
+              </div>
+              <span class="score-value">98%</span>
+            </td>
+            <td>28</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill high" style="width: 96%;"></div>
+              </div>
+              <span class="score-value">96</span>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="rank top">2</span></td>
+            <td onclick="openFactoryDetail()" style="cursor: pointer; color: #3b82f6; font-weight: 600;">宁波织造厂</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill high" style="width: 92%;"></div>
+              </div>
+              <span class="score-value">92%</span>
+            </td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill high" style="width: 95%;"></div>
+              </div>
+              <span class="score-value">95%</span>
+            </td>
+            <td>35</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill high" style="width: 93%;"></div>
+              </div>
+              <span class="score-value">93</span>
+            </td>
+          </tr>
+          <tr class="low-score">
+            <td><span class="rank">11</span></td>
+            <td onclick="openFactoryDetail()" style="cursor: pointer; color: #dc2626; font-weight: 600;">温州印染厂</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill low" style="width: 72%;"></div>
+              </div>
+              <span class="score-value low">72%</span>
+            </td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill medium" style="width: 85%;"></div>
+              </div>
+              <span class="score-value">85%</span>
+            </td>
+            <td>12</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-fill low" style="width: 78%;"></div>
+              </div>
+              <span class="score-value low">78</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h3 class="chart-title">评分趋势</h3>
+    <div class="chart-placeholder">
+      <i class="fas fa-chart-line"></i>
+    </div>
+  </div>
+
+  <div class="modal" id="factoryModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">杭州纺织厂</h3>
+        <div class="close-btn" onclick="closeFactoryDetail()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div class="factory-info">
+        <div class="info-item">
+          <p class="info-label">交期评分</p>
+          <p class="info-value">95%</p>
+        </div>
+        <div class="info-item">
+          <p class="info-label">质量评分</p>
+          <p class="info-value">98%</p>
+        </div>
+        <div class="info-item">
+          <p class="info-label">合作订单数</p>
+          <p class="info-value">28</p>
+        </div>
+        <div class="info-item">
+          <p class="info-label">综合评分</p>
+          <p class="info-value">96</p>
+        </div>
+      </div>
+      <h4 class="history-title">合作历史订单</h4>
+      <div class="history-list">
+        <div class="history-item">
+          <div class="history-info">
+            <p class="history-order">PL-2026-0001</p>
+            <p class="history-date">2026-06-01</p>
+          </div>
+          <span class="history-status on-time">按时完成</span>
+        </div>
+        <div class="history-item">
+          <div class="history-info">
+            <p class="history-order">PL-2026-0005</p>
+            <p class="history-date">2026-05-15</p>
+          </div>
+          <span class="history-status on-time">按时完成</span>
+        </div>
+        <div class="history-item">
+          <div class="history-info">
+            <p class="history-order">PL-2026-0008</p>
+            <p class="history-date">2026-05-01</p>
+          </div>
+          <span class="history-status delay">延期1天</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openFactoryDetail() {
+      document.getElementById('factoryModal').classList.add('active');
+    }
+    function closeFactoryDetail() {
+      document.getElementById('factoryModal').classList.remove('active');
+    }
+  </script>
+<script>
+async function loadFactoryData() {
+  if (!window.DataService) return;
+  try {
+    var { data: factories } = await DataService.factories.list();
+
+    // 统计卡片
+    var vals = document.querySelectorAll('.stat-value');
+    if (vals.length >= 3 && factories) {
+      vals[0].textContent = factories.length;
+      var avgRating = factories.reduce(function(s,f) { return s + (f.rating||0); }, 0) / (factories.length||1);
+      vals[1].textContent = avgRating.toFixed(1);
+      vals[2].textContent = factories.filter(function(f) { return (f.rating||0) >= 4; }).length;
+    }
+
+    // 工厂排行表
+    var tbody = document.querySelector('.data-table tbody');
+    if (tbody && factories) {
+      var sorted = factories.sort(function(a,b) { return (b.rating||0) - (a.rating||0); }).slice(0, 10);
+      tbody.innerHTML = sorted.map(function(f, i) {
+        var stars = '';
+        for (var s = 0; s < (f.rating||0); s++) stars += '★';
+        return '<tr class="' + ((f.rating||0) < 3 ? 'low-score' : '') + '"><td>' + (i+1) + '</td><td>' + (f.name||'') + '</td><td>' + stars + ' (' + (f.rating||0) + ')</td><td>' + (f.status||'active') + '</td><td>' + (f.address||'') + '</td></tr>';
+      }).join('') || '<tr><td colspan="5" style="text-align:center;color:#9ca3af">暂无工厂数据</td></tr>';
+    }
+  } catch(e) { console.warn('Factory:', e.message); }
+}
+document.addEventListener('DOMContentLoaded', loadFactoryData);
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>汇率管理 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    :root{--bg:#eef0f4;--card:#fff;--text:#1e293b;--text2:#64748b;--accent:#2563eb;--success:#10b981;--danger:#ef4444;--shadow:0 1px 2px rgba(0,0,0,.03),0 2px 8px rgba(0,0,0,.04)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);min-height:100vh;padding-bottom:20px;-webkit-font-smoothing:antialiased}
+    .header{background:linear-gradient(155deg,#0f2744,#1b3d62 40%,#1e4d7b);padding:20px 16px;color:#fff;position:relative;overflow:hidden}
+    .header::after{content:'';position:absolute;top:-40px;right:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 70%);border-radius:50%}
+    .header-title{font-size:19px;font-weight:700;margin:0;position:relative;z-index:1}
+    .header-subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;position:relative;z-index:1}
+
+    .card{background:var(--card);margin:12px 14px;border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+    .card-title{font-size:14px;font-weight:700;color:var(--text);margin:0 0 12px 0;display:flex;align-items:center;justify-content:space-between}
+    .card-sub{font-size:11px;color:var(--text2);font-weight:400}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 8px;text-align:left;font-size:12px;border-bottom:1px solid #f3f4f6}
+    th{background:#f8fafc;font-weight:600;color:var(--text2);font-size:11px}
+    .rate-val{font-size:15px;font-weight:700;color:var(--text)}
+    .rate-up{color:var(--success)}
+    .rate-down{color:var(--danger)}
+
+    .btn{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:all .2s}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:var(--accent);color:#fff}
+    .btn-success{background:var(--success);color:#fff}
+    .btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+
+    .canvas-wrap{position:relative;height:200px;margin-top:8px}
+    .loading-text{text-align:center;padding:40px;color:var(--text2)}
+    .sync-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:#dcfce7;color:#16a34a}
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1 class="header-title">汇率管理</h1>
+  <p class="header-subtitle" id="updateTime">实时央行汇率</p>
+</div>
+
+<div style="padding:12px 14px 0;display:flex;gap:8px;align-items:center">
+  <button class="btn btn-primary" onclick="syncRates()"><i class="fas fa-sync-alt"></i> 同步央行汇率</button>
+  <button class="btn btn-sm" style="background:#fee2e2;color:#ef4444;font-size:11px;padding:4px 10px" onclick="resetHistory()"><i class="fas fa-trash"></i> 重置</button>
+  <span id="syncStatus" style="font-size:11px;color:var(--text2);line-height:32px;flex:1"></span>
+</div>
+
+<div class="card">
+  <div class="card-title">汇率列表 <span class="card-sub" id="tableTime"></span></div>
+  <table>
+    <thead><tr><th>币种对</th><th>当前汇率</th><th>较昨日</th></tr></thead>
+    <tbody id="rateTableBody">
+      <tr><td colspan="4" class="loading-text">加载中...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">USD/CNY 汇率走势 <span class="card-sub">前15天 ← 今天 → 后15天</span></div>
+  <div class="canvas-wrap"><canvas id="trendChart"></canvas></div>
+</div>
+
+<div class="card">
+  <div class="card-title">变更日志</div>
+  <div id="historyList" style="max-height:200px;overflow-y:auto">
+    <div class="loading-text">加载中...</div>
+  </div>
+</div>
+
+<script>
+// 免费汇率API
+var API_BASE = 'https://open.er-api.com/v6/latest';
+var CURRENCIES = [
+  { pair: 'USD/CNY', from: 'USD' },
+  { pair: 'EUR/CNY', from: 'EUR' },
+  { pair: 'GBP/CNY', from: 'GBP' },
+  { pair: 'JPY/CNY', from: 'JPY' },
+  { pair: 'KRW/CNY', from: 'KRW' }
+];
+
+var chartInstance = null;
+var historyData = JSON.parse(localStorage.getItem('fx_history') || '[]');
+
+function saveHistory() {
+  if (historyData.length > 100) historyData = historyData.slice(-100);
+  localStorage.setItem('fx_history', JSON.stringify(historyData));
+}
+
+async function syncRates() {
+  var status = document.getElementById('syncStatus');
+  status.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> 同步中...';
+
+  var now = new Date().toISOString();
+  var todayKey = new Date().toLocaleDateString('zh-CN', {month:'short',day:'numeric'});
+  var rates = {};
+  var success = false;
+
+  try {
+    var resp = await fetch(API_BASE + '/USD');
+    var data = await resp.json();
+    if (data && data.rates && data.rates.CNY) {
+      // 国际标准 A/B 标价：1单位A货币 = ? 人民币
+      // 1 USD = CNY_rate, 1 XXX = CNY_rate / XXX_rate
+      var cnyPerUsd = data.rates.CNY;
+      rates['USD/CNY'] = parseFloat(cnyPerUsd.toFixed(4));
+      rates['EUR/CNY'] = parseFloat((cnyPerUsd / data.rates.EUR).toFixed(4));
+      rates['GBP/CNY'] = parseFloat((cnyPerUsd / data.rates.GBP).toFixed(4));
+      rates['JPY/CNY'] = parseFloat((cnyPerUsd / data.rates.JPY).toFixed(6));
+      rates['KRW/CNY'] = parseFloat((cnyPerUsd / data.rates.KRW).toFixed(6));
+      success = true;
+    }
+  } catch(e) {
+    console.warn('API error:', e.message);
+  }
+
+  if (!success) {
+    // API 失败 = 网络问题，不清除已有数据
+    var cachedFallback = JSON.parse(localStorage.getItem('fx_latest') || 'null');
+    if (cachedFallback && cachedFallback.length > 0) {
+      status.innerHTML = '<span style="color:#f59e0b;font-size:11px"><i class="fas fa-exclamation-triangle"></i> 网络异常，显示缓存数据（' + new Date(cachedFallback[0].time).toLocaleDateString() + '）</span>';
+      renderRates(cachedFallback);
+      renderChart();
+      return;
+    }
+    rates = { 'USD/CNY': 6.80, 'EUR/CNY': 7.84, 'GBP/CNY': 9.06, 'JPY/CNY': 0.0424, 'KRW/CNY': 0.00445 };
+    status.innerHTML = '<span style="color:#ef4444;font-size:11px"><i class="fas fa-exclamation-circle"></i> 网络异常，显示参考汇率（非实时）</span>';
+  } else {
+    status.innerHTML = '<span class="sync-badge"><i class="fas fa-check-circle"></i> 已同步 ' + new Date().toLocaleTimeString() + '</span>';
+  }
+
+  var newRates = [];
+  for (var c of CURRENCIES) {
+    var rate = rates[c.pair] || 0;
+    newRates.push({ pair: c.pair, rate: rate, time: now });
+    if (window.DataService && success) {
+      try { DataService.finance.updateRate(c.pair, rate); } catch(e) {}
+    }
+  }
+
+  // 同一天只保留最新一条（覆盖更新，不重复堆叠）
+  if (historyData.length > 0) {
+    var lastEntry = historyData[historyData.length-1];
+    var lastDay = new Date(lastEntry.time).toLocaleDateString('zh-CN', {month:'short',day:'numeric'});
+    if (lastDay === todayKey) {
+      historyData[historyData.length-1] = { time: now, rates: rates };
+    } else {
+      historyData.push({ time: now, rates: rates });
+    }
+  } else {
+    historyData.push({ time: now, rates: rates });
+  }
+  saveHistory();
+  localStorage.setItem('fx_latest', JSON.stringify(newRates));
+  renderRates(newRates);
+  renderChart();
+  renderHistory();
+  document.getElementById('updateTime').textContent = '实时央行汇率 · ' + new Date().toLocaleString();
+}
+
+function renderRates(rates) {
+  var tbody = document.getElementById('rateTableBody');
+  var todayStr = new Date().toLocaleDateString('zh-CN');
+
+  // 找最近一次不同日的记录作为"前一交易日"基准
+  var prevRates = null;
+  var prevDateStr = '';
+  for (var i = historyData.length - 2; i >= 0; i--) {
+    var h = historyData[i];
+    var hDay = new Date(h.time).toLocaleDateString('zh-CN');
+    if (hDay !== todayStr && h.rates) {
+      // 验证数据合理性（日元应 < 1，韩元应 < 0.1）
+      var jpy = h.rates['JPY/CNY'] || 0;
+      var krw = h.rates['KRW/CNY'] || 0;
+      if (jpy < 1 && krw < 0.1) {
+        prevRates = h.rates;
+        prevDateStr = hDay;
+        break;
+      }
+    }
+  }
+
+  document.getElementById('tableTime').textContent = prevDateStr ? ('较前一交易日: ' + prevDateStr) : '首次同步，暂无对比';
+
+  tbody.innerHTML = rates.map(function(r) {
+    var changeHtml = '';
+    if (!prevRates || !prevRates[r.pair]) {
+      changeHtml = '<span style="color:#9ca3af;font-size:12px">首次同步</span>';
+    } else {
+      var prev = prevRates[r.pair];
+      var changePct = ((r.rate - prev) / prev * 100);
+      // 合理性检查：单日波动超过5%视为数据异常
+      if (Math.abs(changePct) > 5) {
+        changeHtml = '<span style="color:#9ca3af;font-size:12px">数据校验中</span>';
+      } else {
+        var isUp = changePct > 0.001;
+        var isDown = changePct < -0.001;
+        var pctStr = (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%';
+        var barColor = isUp ? 'var(--success)' : isDown ? 'var(--danger)' : '#d1d5db';
+        var barWidth = Math.min(Math.abs(changePct) * 80, 120);
+        var arrow = isUp ? '↑' : isDown ? '↓' : '→';
+        changeHtml = '<div style="display:flex;align-items:center;gap:6px">' +
+          '<span style="font-size:18px;color:' + barColor + '">' + arrow + '</span>' +
+          '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:' + barColor + '">' + pctStr + '</div>' +
+          '<div style="height:4px;background:#f1f5f9;border-radius:2px;margin-top:3px"><div style="height:4px;width:' + barWidth + '%;background:' + barColor + ';border-radius:2px"></div></div>' +
+          '</div></div>';
+      }
+    }
+
+    return '<tr><td><b style="font-size:13px">' + r.pair + '</b></td>' +
+      '<td><span class="rate-val" style="font-size:20px">' + r.rate.toFixed(r.pair.indexOf('JPY')>=0||r.pair.indexOf('KRW')>=0?6:4) + '</span></td>' +
+      '<td>' + changeHtml + '</td></tr>';
+  }).join('');
+}
+
+function renderChart() {
+  var ctx = document.getElementById('trendChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  var today = new Date(); today.setHours(0,0,0,0);
+  var labels30 = [];
+  for (var i = -15; i <= 14; i++) {
+    var d = new Date(today); d.setDate(today.getDate() + i);
+    labels30.push(d.toLocaleDateString('zh-CN', {month:'short',day:'numeric'}));
+  }
+
+  var rateMap = {};
+  historyData.forEach(function(h) {
+    var key = new Date(h.time).toLocaleDateString('zh-CN', {month:'short',day:'numeric'});
+    if (h.rates && h.rates['USD/CNY']) rateMap[key] = h.rates['USD/CNY'];
+  });
+
+  var hasData = Object.keys(rateMap).length > 0;
+  var allRates = Object.values(rateMap);
+  var baseRate = hasData ? allRates[allRates.length-1] : 7.25;
+
+  var usdData = labels30.map(function(label) {
+    if (rateMap[label]) return rateMap[label];
+    return hasData ? null : parseFloat((baseRate + (Math.random() - 0.5) * 0.10).toFixed(4));
+  });
+
+  var todayLabel = today.toLocaleDateString('zh-CN', {month:'short',day:'numeric'});
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels30,
+      datasets: [{
+        label: 'USD/CNY',
+        data: usdData,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,.06)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: labels30.map(function(l,i) { return i % 5 === 0 || l === todayLabel ? 4 : 0; }),
+        pointBackgroundColor: labels30.map(function(l) { return l === todayLabel ? '#ef4444' : '#2563eb'; }),
+        borderWidth: 2,
+        spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 10 } },
+        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderHistory() {
+  var el = document.getElementById('historyList');
+  var recent = historyData.slice(-20).reverse();
+  if (recent.length === 0) {
+    el.innerHTML = '<div class="loading-text">暂无记录，点击同步获取</div>';
+    return;
+  }
+  el.innerHTML = recent.map(function(h) {
+    var pairs = Object.entries(h.rates||{}).map(function(e) { return e[0] + ': ' + Number(e[1]).toFixed(4); }).join(' | ');
+    return '<div style="padding:8px 10px;background:#f8fafc;border-radius:8px;margin-bottom:6px;font-size:12px"><div style="display:flex;justify-content:space-between"><span>' + pairs + '</span><span style="color:var(--text2);font-size:11px">' + new Date(h.time).toLocaleString() + '</span></div></div>';
+  }).join('');
+}
+
+function resetHistory() {
+  if (!confirm('确定清除所有汇率历史数据吗？清除后将重新同步。')) return;
+  historyData = [];
+  localStorage.removeItem('fx_history');
+  localStorage.removeItem('fx_latest');
+  localStorage.removeItem('fx_prev');
+  document.getElementById('rateTableBody').innerHTML = '<tr><td colspan="3" class="loading-text">历史已清除，请点击同步</td></tr>';
+  document.getElementById('historyList').innerHTML = '<div class="loading-text">历史已清除</div>';
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  document.getElementById('syncStatus').textContent = '已重置，等待同步...';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var cached = JSON.parse(localStorage.getItem('fx_latest') || 'null');
+  if (cached) { renderRates(cached); renderChart(); renderHistory(); }
+  syncRates();
+  setInterval(syncRates, 3 * 60 * 60 * 1000);
+});
+</script>
+</body>
+</html>

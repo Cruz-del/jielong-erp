@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>操作记录 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .back-btn {
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .back-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .content {
+      padding: 16px;
+    }
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    .filter-item {
+      padding: 8px 16px;
+      background: white;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+    .filter-item.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    .timeline {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .timeline-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .timeline-item:last-child {
+      border-bottom: none;
+    }
+    .timeline-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #3b82f6;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .timeline-content {
+      flex: 1;
+    }
+    .timeline-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1f2937;
+    }
+    .timeline-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .timeline-time {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .empty-icon {
+      font-size: 48px;
+      color: #d1d5db;
+      margin-bottom: 12px;
+    }
+    .empty-text {
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 16px;
+      cursor: pointer;
+      color: #6b7280;
+      transition: color 0.2s;
+    }
+    .nav-item.active {
+      color: #3b82f6;
+    }
+    .nav-item i {
+      font-size: 20px;
+    }
+    .nav-item span {
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="back-btn" onclick="goBack()">
+      <i class="fas fa-chevron-left"></i>
+    </div>
+    <h1>操作记录</h1>
+  </div>
+
+  <div class="content">
+    <div class="filter-bar">
+      <div class="filter-item active" onclick="filterByCategory('全部')">全部</div>
+      <div class="filter-item" onclick="filterByCategory('订单操作')">订单操作</div>
+      <div class="filter-item" onclick="filterByCategory('财务操作')">财务操作</div>
+      <div class="filter-item" onclick="filterByCategory('系统设置')">系统设置</div>
+    </div>
+
+    <div class="timeline" id="timelineContainer">
+      <!-- 操作记录将动态加载 -->
+    </div>
+  </div>
+
+  <!-- 底部导航由外壳统一提供 -->
+  <script>
+    function goBack() {
+      window.history.back();
+    }
+    function navigateTo(page) {
+      window.location.href = page;
+    }
+    
+    // 获取当前用户信息
+    function getCurrentUser() {
+      const userData = localStorage.getItem('currentUser');
+      return userData ? JSON.parse(userData) : { id: 'anonymous', name: '匿名用户', role: '跟单员' };
+    }
+    
+    // 格式化时间
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) {
+        return '今天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      } else if (diffDays === 1) {
+        return '昨天 ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      } else if (diffDays < 7) {
+        return `${diffDays}天前`;
+      } else {
+        return date.toLocaleDateString('zh-CN');
+      }
+    }
+    
+    // 获取默认操作记录
+    function getDefaultLogs() {
+      return [
+        { id: 1, title: '登录系统', description: '成功登录账户', operator: getCurrentUser().name, category: '系统设置', timestamp: new Date().toISOString() },
+        { id: 2, title: '查看订单详情', description: '订单号: PL-2026-0001', operator: getCurrentUser().name, category: '订单操作', timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString() },
+        { id: 3, title: '修改角色权限', description: '将角色设置为超级管理员', operator: getCurrentUser().name, category: '系统设置', timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString() },
+        { id: 4, title: '上传文件', description: '订单PL-2026-0001 质检报告.pdf', operator: getCurrentUser().name, category: '订单操作', timestamp: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString() },
+        { id: 5, title: '创建订单', description: '创建新订单 PL-2026-0001', operator: getCurrentUser().name, category: '订单操作', timestamp: new Date(Date.now() - 28 * 60 * 60 * 1000).toISOString() }
+      ];
+    }
+    
+    // 加载操作记录
+    function loadOperationLogs() {
+      const logs = JSON.parse(localStorage.getItem('operationLogs') || '[]');
+      const defaultLogs = getDefaultLogs();
+      
+      // 合并日志（默认日志作为基础）
+      const allLogs = [...logs, ...defaultLogs];
+      
+      // 去重并排序
+      const uniqueLogs = allLogs.filter((log, index, self) => 
+        index === self.findIndex(l => l.id === log.id)
+      ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      const timeline = document.getElementById('timelineContainer');
+      
+      if (uniqueLogs.length === 0) {
+        timeline.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-file-alt"></i></div>
+            <div class="empty-text">暂无操作记录</div>
+          </div>
+        `;
+        return;
+      }
+      
+      const html = uniqueLogs.map(log => `
+        <div class="timeline-item" data-category="${log.category}">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-title">${log.title}</div>
+            <div class="timeline-desc">${log.description} - ${log.operator}</div>
+            <div class="timeline-time">${formatTime(log.timestamp)}</div>
+          </div>
+        </div>
+      `).join('');
+      
+      timeline.innerHTML = html;
+    }
+    
+    // 筛选操作记录
+    function filterByCategory(category) {
+      // 更新筛选标签状态
+      const filterItems = document.querySelectorAll('.filter-item');
+      filterItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.textContent === category) {
+          item.classList.add('active');
+        }
+      });
+      
+      // 显示/隐藏操作项
+      const timelineItems = document.querySelectorAll('.timeline-item');
+      let visibleCount = 0;
+      
+      timelineItems.forEach(item => {
+        const itemCategory = item.getAttribute('data-category');
+        if (category === '全部' || itemCategory === category) {
+          item.style.display = 'flex';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      // 检查是否有显示的项
+      const timeline = document.getElementById('timelineContainer');
+      
+      // 如果没有显示的项，显示空状态
+      if (visibleCount === 0) {
+        timeline.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-file-alt"></i></div>
+            <div class="empty-text">暂无${category}相关操作记录</div>
+          </div>
+        `;
+      }
+    }
+    
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      loadOperationLogs();
+    });
+  </script>
+</body>
+</html>

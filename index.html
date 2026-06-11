@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>捷隆纺织 - 外贸订单管理系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <!-- Supabase 配置文件 -->
+  <script src="js/supabase-config.js"></script>
+  <!-- Supabase 统一客户端（v2） -->
+  <script src="js/supabase-client.js"></script>
+  <!-- 全局工具库 -->
+  <script src="js/components.js"></script>
+  <script src="js/state.js"></script>
+  <script>if(window.innerWidth<768&&!location.pathname.includes('mobile.html')){location.replace('mobile.html')}</script>
+  <script src="js/accessibility.js"></script>
+  <!-- 权限模块 -->
+  <script src="js/permissions.js"></script>
+  <!-- 认证模块（v2） -->
+  <script src="js/auth.js"></script>
+  <!-- 统一数据服务层 -->
+  <script src="js/data-service.js"></script>
+  <!-- 数据同步模块（v2） -->
+  <script src="js/data-sync.js"></script>
+  <style>
+    .phone-frame {
+      width: 393px;
+      height: 852px;
+      border-radius: 48px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 3px solid #1a1a1a;
+      position: relative;
+    }
+    .status-bar {
+      height: 47px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .bottom-bar {
+      height: 75px;
+      background: #1a1a2e;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 4px 0 calc(4px + env(safe-area-inset-bottom));
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #6b7280;
+      transition: all 0.3s;
+      padding: 2px 4px;
+      min-width: 52px;
+    }
+    .nav-item.active, .nav-item:hover {
+      color: #3b82f6;
+    }
+    .nav-item i {
+      font-size: 18px;
+      margin-bottom: 2px;
+    }
+    .nav-item span {
+      font-size: 9px;
+      white-space: nowrap;
+    }
+    .page-container {
+      height: calc(100% - 122px);
+      overflow-y: auto;
+      background: #f5f5f7;
+    }
+    .iframe-content {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .page-selector {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 100;
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .page-selector h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #333;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .page-selector ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .page-selector li {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #666;
+      transition: background 0.2s;
+    }
+    .page-selector li:hover {
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+    .page-selector li.active {
+      background: #3b82f6;
+      color: white;
+    }
+    .module-title {
+      font-weight: 600;
+      color: #333;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      padding-left: 12px;
+      border-left: 3px solid #3b82f6;
+    }
+    .preview-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      padding: 40px;
+      justify-content: center;
+    }
+    @media (max-width: 768px) {
+      .phone-frame {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        border: none;
+      }
+      .page-selector {
+        position: relative;
+        top: auto;
+        right: auto;
+        max-height: 30vh;
+      }
+    }
+
+    /* 无障碍支持 - 增强焦点指示 */
+    *:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
+    /* 跳过链接 */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 9999;
+      padding: 10px 20px;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      border-radius: 0 0 8px 0;
+    }
+    .skip-link:focus {
+      left: 0;
+    }
+
+    /* 加载动画 */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Toast 动画 */
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="page-selector">
+    <h3><i class="fas fa-list"></i> 页面导航</h3>
+    <ul>
+      <li class="module-title">门户网站</li>
+      <li onclick="loadPage('pages/login.html')">员工登录页</li>
+      <li onclick="loadPage('pages/index.html')">官网首页</li>
+      <li onclick="loadPage('pages/settings.html')">个人设置页</li>
+      
+      <li class="module-title">跟单工作台</li>
+      <li onclick="loadPage('pages/dashboard.html')">跟单工作台</li>
+      <li onclick="loadPage('pages/design-production.html')">设计生产单</li>
+      <li onclick="loadPage('pages/order-detail.html')">订单详情页</li>
+      <li onclick="loadPage('pages/library-mark.html')">唛头库管理页</li>
+      <li onclick="loadPage('pages/inquiry.html')">询价单管理页</li>
+      <li onclick="loadPage('pages/order-create.html')">计划单生成页</li>
+      <li onclick="loadPage('pages/factory.html')">工厂档案页</li>
+      
+      <li class="module-title">文件与单证</li>
+      <li onclick="loadPage('pages/files.html')">文件中心</li>
+      <li onclick="loadPage('pages/loading.html')">装柜管理页</li>
+      <li onclick="loadPage('pages/docs.html')">报关单证生成页</li>
+      
+      <li class="module-title">智能对账与财务</li>
+      <li onclick="loadPage('pages/finance-ar.html')">应收账款看板</li>
+      <li onclick="loadPage('pages/finance-reconcile.html')">订单对账页</li>
+      <li onclick="loadPage('pages/finance-profit.html')">利润分析页</li>
+      <li onclick="loadPage('pages/finance-risk.html')">财务风险预警页</li>
+      <li onclick="loadPage('pages/finance-overseas.html')">海外仓看板</li>
+      <li onclick="loadPage('pages/finance-payment.html')">回款核销页</li>
+      <li onclick="loadPage('pages/finance-rate.html')">汇率管理页</li>
+      
+      <li class="module-title">AI业务助手</li>
+      <li onclick="loadPage('pages/ai-chat.html')">AI对话查询页</li>
+      <li onclick="loadPage('pages/ai-scan.html')">单据识别上传页</li>
+      
+      <li class="module-title">老板驾驶舱</li>
+      <li onclick="loadPage('pages/boss-dashboard.html')">老板驾驶舱</li>
+      <li onclick="loadPage('pages/boss-factory.html')">工厂绩效排行页</li>
+      <li onclick="loadPage('pages/boss-customer.html')">客户利润贡献页</li>
+      
+      <li class="module-title">系统管理</li>
+      <li onclick="loadPage('pages/admin-users.html')">用户与角色管理</li>
+      <li onclick="loadPage('pages/admin-permission.html')">权限管理</li>
+      <li onclick="loadPage('pages/batch-operation.html')">批量操作</li>
+      <li onclick="loadPage('pages/admin-logs.html')">操作日志审计</li>
+      <li onclick="loadPage('pages/settings.html')">系统设置</li>
+      <li onclick="loadPage('pages/tasks.html')">待办任务中心</li>
+      <li onclick="loadPage('pages/notifications.html')">异常预警通知中心</li>
+    </ul>
+  </div>
+
+  <div class="preview-section">
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span>9:41</span>
+        <span>捷隆纺织</span>
+        <span><i class="fas fa-signal"></i> <i class="fas fa-wifi"></i> <i class="fas fa-battery-full"></i></span>
+      </div>
+      <div class="page-container">
+        <iframe id="pageFrame" class="iframe-content" src="pages/index.html?v=3"></iframe>
+      </div>
+      <div class="bottom-bar" id="bottomBar" style="display: none;">
+        <!-- 底部导航由 buildBottomNav() 动态生成，根据角色只显示有权限的Tab -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======================================================
+    // 捷隆纺织 - 主入口脚本（v2 统一架构）
+    // Supabase 客户端已由 supabase-client.js 统一初始化
+    // ======================================================
+
+    // 页面加载管理
+    let currentPage = 'pages/login.html';
+    let pageHistory = [];
+
+    // 检查登录状态（会话级：sessionStorage 优先，关闭浏览器即失效）
+    async function checkLoginStatus() {
+      // 首先检查 sessionStorage（浏览器关闭后自动清除）
+      const hasSessionLogin = Auth.isLoggedInSync();
+      if (!hasSessionLogin) {
+        // sessionStorage 无登录记录 → 确保 Supabase 也退出
+        if (window.SupabaseClient && window.SupabaseClient.isAvailable()) {
+          try { await window.SupabaseClient.signOut(); } catch (e) { /* 忽略 */ }
+        }
+        return false;
+      }
+
+      // sessionStorage 有登录记录 → 尝试验证 Supabase session
+      if (window.SupabaseClient && window.SupabaseClient.isAvailable()) {
+        try {
+          const { data: { session } } = await window.SupabaseClient.getSession();
+          if (session?.user) return true;
+        } catch (e) { /* 忽略 */ }
+      }
+      return true; // sessionStorage 有登录记录即可
+    }
+
+    // 所有可用Tab定义（图标+文字+页面+权限key）
+    const ALL_TABS = [
+      { key:'工作台', icon:'fa-clipboard-list', label:'工作台', page:'pages/dashboard.html' },
+      { key:'物流单证', icon:'fa-ship', label:'物流单证', page:'pages/cat-logistics.html' },
+      { key:'财务', icon:'fa-chart-bar', label:'财务', page:'pages/cat-finance.html' },
+      { key:'AI助手', icon:'fa-robot', label:'AI助手', page:'pages/cat-ai.html' },
+      { key:'驾驶舱', icon:'fa-tachometer-alt', label:'驾驶舱', page:'pages/cat-boss.html' },
+      { key:'管理', icon:'fa-cog', label:'管理', page:'pages/cat-admin.html' }
+    ];
+
+    // 根据角色动态生成底部导航
+    function buildBottomNav() {
+      const bar = document.getElementById('bottomBar');
+      if (!bar) return;
+      const role = window.Permission ? Permission.getMyRole() : '外贸业务员';
+      bar.innerHTML = ALL_TABS.filter(tab => !window.Permission || Permission.canSeeTab(tab.key))
+        .map(tab => `<div class="nav-item" data-page="${tab.key}" onclick="loadPage('${tab.page}')">
+          <i class="fas ${tab.icon}"></i><span>${tab.label}</span></div>`).join('');
+      console.log('📱 底部导航已生成，角色:', role);
+    }
+
+    // 显示底部导航栏
+    function showBottomBar() {
+      buildBottomNav();
+      document.getElementById('bottomBar').style.display = 'flex';
+    }
+
+    // 隐藏底部导航栏
+    function hideBottomBar() {
+      document.getElementById('bottomBar').style.display = 'none';
+    }
+
+    // 页面初始化：默认显示官网首页
+    document.addEventListener('DOMContentLoaded', async function() {
+      const loggedIn = await checkLoginStatus();
+      if (loggedIn) {
+        // 已登录：显示底部导航，自动跳转到工作台
+        showBottomBar();
+        setTimeout(() => loadPage('pages/dashboard.html'), 100);
+      } else {
+        // 未登录：显示官网首页，隐藏底部导航
+        hideBottomBar();
+        // iframe 已默认加载 pages/index.html
+        currentPage = 'pages/index.html';
+      }
+    });
+
+    // 公开页面（无需登录即可访问）
+    const publicPages = ['pages/index.html', 'pages/login.html'];
+
+    function isPublicPage(pageUrl) {
+      return publicPages.some(p => pageUrl.includes(p));
+    }
+
+    // 路由守卫：检查登录状态
+    async function requireAuth(pageUrl) {
+      if (isPublicPage(pageUrl)) return true;
+      const loggedIn = await checkLoginStatus();
+      if (!loggedIn) {
+        console.warn('🔒 未登录访问受保护页面，重定向到登录页:', pageUrl);
+        if (typeof Toast !== 'undefined') {
+          Toast.warning('请先登录后再访问');
+        }
+        return false;
+      }
+      return true;
+    }
+
+    async function loadPage(pageUrl) {
+      // 路由守卫检查
+      if (!(await requireAuth(pageUrl))) {
+        currentPage = 'pages/login.html';
+        document.getElementById('pageFrame').src = 'pages/login.html';
+        hideBottomBar();
+        return;
+      }
+
+      const iframe = document.getElementById('pageFrame');
+
+      // 保存历史
+      if (currentPage !== pageUrl) {
+        pageHistory.push(currentPage);
+        if (pageHistory.length > 10) pageHistory.shift();
+      }
+
+      // 显示加载状态
+      if (typeof Loading !== 'undefined') Loading.show('页面加载中...');
+
+      // 加载新页面（加时间戳防缓存）
+      const cacheBuster = pageUrl.includes('?') ? '&_t=' + Date.now() : '?_t=' + Date.now();
+      iframe.src = pageUrl + cacheBuster;
+      currentPage = pageUrl;
+
+      // 更新导航状态
+      updateNavigation(pageUrl);
+
+      // 页面加载完成后隐藏loading
+      iframe.onload = function() {
+        if (typeof Loading !== 'undefined') Loading.hide();
+
+        // 通知iframe页面已加载
+        try {
+          iframe.contentWindow.postMessage({
+            type: 'pageLoaded',
+            page: pageUrl
+          }, '*');
+        } catch (e) { /* 跨域 */ }
+      };
+    }
+
+    // 更新导航状态
+    function updateNavigation(pageUrl) {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        const page = item.getAttribute('data-page');
+        if (page && pageUrl.includes(page)) {
+          item.classList.add('active');
+        }
+      });
+
+      document.querySelectorAll('.page-selector li').forEach(li => {
+        li.classList.remove('active');
+        const onclick = li.getAttribute('onclick');
+        if (onclick && onclick.includes(pageUrl)) {
+          li.classList.add('active');
+        }
+      });
+    }
+
+    // 返回上一页
+    function goBack() {
+      if (pageHistory.length > 0) {
+        const prevPage = pageHistory.pop();
+        loadPage(prevPage);
+      } else {
+        if (typeof Toast !== 'undefined') Toast.warning('没有可返回的页面');
+      }
+    }
+
+    // 全局消息监听
+    window.addEventListener('message', async function(event) {
+      if (!event.data) return;
+
+      switch (event.data.type) {
+        case 'loginSuccess':
+          console.log('✅ 收到登录成功消息:', event.data.user);
+          if (typeof Toast !== 'undefined') Toast.success('登录成功！欢迎回来');
+          // 强制刷新权限
+          if (window.Permission) { await Permission.refresh(); }
+          showBottomBar();
+          loadPage('pages/dashboard.html');
+          break;
+
+        case 'logout':
+          console.log('🔒 收到退出消息');
+          Auth.logout();
+          hideBottomBar();
+          loadPage('pages/login.html');
+          break;
+
+        case 'navigate':
+          console.log('🔄 收到导航消息:', event.data.page);
+          loadPage(event.data.page);
+          break;
+
+        case 'stateUpdate':
+          if (typeof AppState !== 'undefined') {
+            AppState.set(event.data.key, event.data.value);
+          }
+          break;
+      }
+    });
+
+    // 网络状态监听
+    window.addEventListener('online', () => {
+      console.log('🌐 网络已恢复');
+      if (window.SupabaseClient) {
+        window.SupabaseClient.testConnection();
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      console.warn('⚠️ 网络已断开，使用离线模式');
+    });
+
+    // 初始化完成
+    console.log('🚀 捷隆纺织订单管理系统 v2 已初始化');
+    console.log('   Supabase:', window.SupabaseClient?.isAvailable() ? '✅' : '❌');
+    console.log('   DataService:', window.DataService ? '✅' : '❌');
+    console.log('   Auth:', window.Auth ? '✅' : '❌');
+    console.log('   DataSync:', window.DataSync ? '✅' : '❌');
+  </script>
+</body>
+</html>

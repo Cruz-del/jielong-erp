@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>利润分析 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .tabs-section {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .tab-item {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .tab-item.active {
+      background: #3b82f6;
+      color: white;
+    }
+    .tab-item:not(.active) {
+      color: #6b7280;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .date-select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+    }
+    .action-btn {
+      padding: 8px 14px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chart-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .chart-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 16px 0;
+    }
+    .chart-placeholder {
+      height: 200px;
+      background: #f9fafb;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-placeholder canvas {
+      width: 100%;
+      height: 100%;
+    }
+    .chart-placeholder div {
+      text-align: center;
+      color: #9ca3af;
+    }
+    .chart-placeholder i {
+      font-size: 48px;
+      opacity: 0.5;
+      margin-bottom: 12px;
+    }
+    .table-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .table-info {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .profit-positive {
+      color: #10b981;
+      font-weight: 500;
+    }
+    .profit-negative {
+      color: #dc2626;
+      font-weight: 500;
+    }
+    .row-action {
+      color: #3b82f6;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .cards-section {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0 0 8px 0;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0;
+    }
+    .stat-value.positive {
+      color: #10b981;
+    }
+    .stat-value.negative {
+      color: #dc2626;
+    }
+    .stat-trend {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .stat-trend.up {
+      color: #10b981;
+    }
+    .stat-trend.down {
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">利润分析</h1>
+    <p class="header-subtitle">多维度利润数据</p>
+  </div>
+
+  <div class="tabs-section">
+    <span class="tab-item active">按订单</span>
+  </div>
+
+  <div class="filter-bar">
+    <select class="date-select">
+      <option>本月</option>
+      <option>上月</option>
+      <option>本季度</option>
+      <option>本年</option>
+    </select>
+    <button class="action-btn" onclick="exportToExcel()">
+      <i class="fas fa-download"></i> 导出Excel
+    </button>
+  </div>
+
+  <div class="cards-section">
+    <div class="stat-card">
+      <p class="stat-label">总销售额</p>
+      <p class="stat-value">$1,250,000</p>
+      <p class="stat-trend up"><i class="fas fa-trend-up"></i> +12.5%</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">总毛利</p>
+      <p class="stat-value positive">$287,500</p>
+      <p class="stat-trend up"><i class="fas fa-trend-up"></i> +8.3%</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">毛利率</p>
+      <p class="stat-value">23.0%</p>
+      <p class="stat-trend down"><i class="fas fa-trend-down"></i> -1.2%</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">订单数量</p>
+      <p class="stat-value">45</p>
+      <p class="stat-trend up"><i class="fas fa-trend-up"></i> +5</p>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h3 class="chart-title">毛利趋势</h3>
+    <div class="chart-placeholder">
+      <div>
+        <i class="fas fa-chart-bar"></i>
+        <p>图表区域</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <p class="table-title">订单利润明细</p>
+      <span class="table-info">共 45 条记录</span>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>订单号</th>
+            <th>客户</th>
+            <th>销售额</th>
+            <th>成本</th>
+            <th>毛利</th>
+            <th>毛利率</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PL-2026-0001</td>
+            <td>ABC Trading</td>
+            <td>$50,000</td>
+            <td>$38,000</td>
+            <td class="profit-positive">$12,000</td>
+            <td class="profit-positive">24.0%</td>
+            <td class="row-action">查看</td>
+          </tr>
+          <tr>
+            <td>PL-2026-0002</td>
+            <td>XYZ Fashion</td>
+            <td>$35,000</td>
+            <td>$28,000</td>
+            <td class="profit-positive">$7,000</td>
+            <td class="profit-positive">20.0%</td>
+            <td class="row-action">查看</td>
+          </tr>
+          <tr>
+            <td>PL-2026-0003</td>
+            <td>Euro Textile</td>
+            <td>$120,000</td>
+            <td>$95,000</td>
+            <td class="profit-positive">$25,000</td>
+            <td class="profit-positive">20.8%</td>
+            <td class="row-action">查看</td>
+          </tr>
+          <tr>
+            <td>PL-2026-0004</td>
+            <td>USA Apparel</td>
+            <td>$65,000</td>
+            <td>$55,000</td>
+            <td class="profit-positive">$10,000</td>
+            <td class="profit-positive">15.4%</td>
+            <td class="row-action">查看</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+var profitChart = null;
+
+async function loadProfitData() {
+  if (!window.DataService) return;
+
+  try {
+    var { data: payments } = await DataService.finance.listPayments({ verified: true });
+    var { data: expenses } = await DataService.finance.listExpenses();
+    payments = payments || []; expenses = expenses || [];
+
+    var totalIncome = payments.reduce(function(s, p) { return s + (parseFloat(p.amount) || 0); }, 0);
+    var totalCost = expenses.reduce(function(s, e) { return s + (parseFloat(e.amount) || 0); }, 0);
+    var totalProfit = totalIncome - totalCost;
+    var margin = totalIncome > 0 ? (totalProfit / totalIncome * 100) : 0;
+
+    // 5个统计卡片
+    var cards = document.querySelectorAll('.cards-section .stat-card');
+    if (cards.length >= 5) {
+      setCardVal(cards[0], '$' + totalIncome.toLocaleString('en-US', {minimumFractionDigits: 2}));
+      setCardVal(cards[1], '$' + totalCost.toLocaleString('en-US', {minimumFractionDigits: 2}));
+      setCardVal(cards[2], '$' + totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2}));
+      setCardVal(cards[3], '$' + (totalIncome * 0.22).toLocaleString('en-US', {minimumFractionDigits: 2}));
+      setCardVal(cards[4], margin.toFixed(1) + '%', margin > 20);
+    }
+
+    // 订单利润明细表
+    var orderMap = {};
+    payments.forEach(function(p) {
+      var key = p.order_id || (p.order ? p.order.pl_number : '') || 'unknown';
+      if (!orderMap[key]) orderMap[key] = { pl: key, customer: p.order ? p.order.customer_name : '', income: 0, cost: 0 };
+      orderMap[key].income += parseFloat(p.amount) || 0;
+    });
+    expenses.forEach(function(e) {
+      var key = e.order_id || (e.order ? e.order.pl_number : '') || 'unknown';
+      if (!orderMap[key]) orderMap[key] = { pl: key, customer: '', income: 0, cost: 0 };
+      orderMap[key].cost += parseFloat(e.amount) || 0;
+    });
+
+    var tbody = document.querySelector('.data-table tbody');
+    if (tbody) {
+      var rows = Object.values(orderMap);
+      if (rows.length > 0) {
+        tbody.innerHTML = rows.map(function(o) {
+          var profit = o.income - o.cost;
+          var m = o.income > 0 ? (profit / o.income * 100).toFixed(1) : '0.0';
+          var cls = profit >= 0 ? 'profit-positive' : 'profit-negative';
+          return '<tr><td>' + (o.pl||'—') + '</td><td>' + (o.customer||'—') + '</td><td>$' + o.income.toFixed(2) + '</td><td>$' + o.cost.toFixed(2) + '</td><td class="' + cls + '">$' + profit.toFixed(2) + '</td><td>' + m + '%</td><td><button onclick="viewOrder(\'' + (o.pl||'') + '\')" style="border:none;background:#eff4ff;color:#2563eb;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px">详情</button></td></tr>';
+        }).join('');
+      }
+    }
+
+    // 图表
+    var chartEl = document.querySelector('.chart-placeholder');
+    if (chartEl && window.Chart) {
+      chartEl.innerHTML = '<canvas id="profitCanvas" style="width:100%;height:160px"></canvas>';
+      var ctx = document.getElementById('profitCanvas').getContext('2d');
+      if (profitChart) profitChart.destroy();
+      profitChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['总收入', '总成本', '毛利'],
+          datasets: [{ data: [totalIncome, totalCost, totalProfit], backgroundColor: ['#10b981','#ef4444','#3b82f6'], borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: function(v) { return '$' + (v/1000).toFixed(0) + 'K'; } } } } }
+      });
+    }
+  } catch(e) { console.warn('Profit:', e.message); }
+}
+
+function setCardVal(card, val, isGood) {
+  var v = card.querySelector('.stat-value');
+  if (v) v.textContent = val;
+  if (isGood !== undefined) {
+    v.style.color = isGood ? '#10b981' : '#ef4444';
+  }
+}
+
+function exportToExcel() {
+  var rows = [];
+  document.querySelectorAll('.data-table tbody tr').forEach(function(tr) {
+    var cells = [];
+    tr.querySelectorAll('td').forEach(function(td) { cells.push(td.textContent.trim()); });
+    if (cells.length >= 6) rows.push({ 订单号: cells[0], 客户: cells[1], 销售额: cells[2], 成本: cells[3], 毛利: cells[4], 毛利率: cells[5] });
+  });
+  if (rows.length === 0) { if (typeof Toast !== 'undefined') Toast.warning('无数据可导出'); return; }
+  if (typeof ExportExcel !== 'undefined') {
+    ExportExcel.download(rows, '利润分析报表_' + new Date().toISOString().split('T')[0]);
+  } else {
+    var csv = '﻿' + Object.keys(rows[0]).join(',') + '\n' + rows.map(function(r) { return Object.values(r).join(','); }).join('\n');
+    var b = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = '利润分析_' + new Date().toISOString().split('T')[0] + '.csv'; a.click();
+  }
+}
+
+function viewOrder(pl) {
+  if (window.parent && typeof window.parent.loadPage === 'function') {
+    window.parent.loadPage('pages/order-detail.html?id=' + pl);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadProfitData);
+</script>
+</body>
+</html>

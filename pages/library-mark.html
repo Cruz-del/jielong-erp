@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>唛头库管理 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .search-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+    }
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #f9fafb;
+    }
+    .action-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .action-btn.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .action-btn.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .action-btn.warning {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .table-section {
+      background: white;
+      margin: 12px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 12px 16px;
+      background: #f9fafb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .table-info {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 12px;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .data-table tr.selected {
+      background: #eff6ff;
+    }
+    .data-table tr.selected td:first-child {
+      border-left: 3px solid #3b82f6;
+    }
+    .order-count {
+      padding: 4px 10px;
+      background: #dbeafe;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #2563eb;
+    }
+    .preview-card {
+      background: white;
+      margin: 12px;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .preview-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .preview-content {
+      background: #fff;
+      border: 1px dashed #d1d5db;
+      border-radius: 10px;
+      padding: 24px;
+      min-height: 160px;
+    }
+    .mark-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .mark-code {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+    .mark-customer {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .mark-body {
+      font-size: 12px;
+      color: #374151;
+      line-height: 1.8;
+    }
+    .mark-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+    .mark-label {
+      color: #6b7280;
+    }
+    .mark-value {
+      font-weight: 500;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .btn-section {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-full {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .btn-full.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-full.success {
+      background: #10b981;
+      color: white;
+    }
+    .validate-btn {
+      padding: 8px 14px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .warning-box {
+      background: #fff5f5;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .warning-icon {
+      color: #dc2626;
+      margin-right: 8px;
+    }
+    .warning-text {
+      font-size: 12px;
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">唛头库管理</h1>
+    <p class="header-subtitle">管理和维护唛头模板</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" class="search-input" placeholder="搜索花型号、设计号、客户...">
+    <button class="validate-btn">
+      <i class="fas fa-check-circle"></i> 匹配校验
+    </button>
+  </div>
+
+  <div class="action-bar">
+    <button class="action-btn primary" onclick="openAddModal()">
+      <i class="fas fa-plus"></i> 新增
+    </button>
+    <button class="action-btn secondary" onclick="editMark()">
+      <i class="fas fa-edit"></i> 编辑
+    </button>
+    <button class="action-btn warning" onclick="deleteMark()">
+      <i class="fas fa-trash"></i> 删除
+    </button>
+    <button class="action-btn secondary" onclick="batchExport()">
+      <i class="fas fa-download"></i> 批量导出
+    </button>
+    <button class="action-btn secondary" onclick="batchImport()">
+      <i class="fas fa-upload"></i> 批量导入
+    </button>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <p class="table-title">唛头列表</p>
+      <span class="table-info">共 156 条</span>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>花型号</th>
+            <th>设计号</th>
+            <th>码长</th>
+            <th>客户</th>
+            <th>备注</th>
+            <th>关联订单</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="selected">
+            <td>HX-2026-001</td>
+            <td>DSN-001</td>
+            <td>5000m</td>
+            <td>ABC Trading</td>
+            <td>花卉系列</td>
+            <td><span class="order-count">8</span></td>
+          </tr>
+          <tr>
+            <td>JH-2026-003</td>
+            <td>DSN-005</td>
+            <td>8000m</td>
+            <td>Euro Textile</td>
+            <td>几何系列</td>
+            <td><span class="order-count">5</span></td>
+          </tr>
+          <tr>
+            <td>CX-2026-002</td>
+            <td>DSN-003</td>
+            <td>3000yd</td>
+            <td>USA Apparel</td>
+            <td>抽象系列</td>
+            <td><span class="order-count">12</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="preview-card">
+    <div class="preview-header">
+      <p class="preview-title">唛头预览</p>
+    </div>
+    <div class="preview-content">
+      <div class="mark-header">
+        <span class="mark-code">HX-2026-001</span>
+        <span class="mark-customer">ABC Trading</span>
+      </div>
+      <div class="mark-body">
+        <div class="mark-row">
+          <span class="mark-label">设计号:</span>
+          <span class="mark-value">DSN-001</span>
+        </div>
+        <div class="mark-row">
+          <span class="mark-label">码长:</span>
+          <span class="mark-value">5000m</span>
+        </div>
+        <div class="mark-row">
+          <span class="mark-label">客户:</span>
+          <span class="mark-value">ABC Trading Co., Ltd.</span>
+        </div>
+        <div class="mark-row">
+          <span class="mark-label">备注:</span>
+          <span class="mark-value">花卉系列 - 标准包装</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <h3 class="modal-title">新增唛头</h3>
+      <div class="form-group">
+        <label class="form-label">花型号</label>
+        <input type="text" class="form-input" placeholder="请输入花型号">
+      </div>
+      <div class="form-group">
+        <label class="form-label">设计号</label>
+        <input type="text" class="form-input" placeholder="请输入设计号">
+      </div>
+      <div class="form-group">
+        <label class="form-label">码长</label>
+        <input type="text" class="form-input" placeholder="请输入码长">
+      </div>
+      <div class="form-group">
+        <label class="form-label">客户</label>
+        <input type="text" class="form-input" placeholder="请输入客户名称">
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <input type="text" class="form-input" placeholder="请输入备注">
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeAddModal()">取消</button>
+        <button class="btn-full primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="validateModal">
+    <div class="modal-content">
+      <h3 class="modal-title">匹配校验</h3>
+      <div class="form-group">
+        <label class="form-label">输入型号</label>
+        <input type="text" class="form-input" placeholder="请输入花型号或设计号">
+      </div>
+      <div class="warning-box">
+        <span class="warning-icon"><i class="fas fa-exclamation-circle"></i></span>
+        <span class="warning-text">型号与标准内容不一致，已自动修正</span>
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeValidateModal()">取消</button>
+        <button class="btn-full success">应用到表单</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedMarkId = null;
+
+    function openAddModal() { document.getElementById('addModal').classList.add('active'); }
+    function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+    function closeValidateModal() { document.getElementById('validateModal').classList.remove('active'); }
+
+    function editMark() {
+      if (!selectedMarkId) { if (typeof Toast!=='undefined') Toast.warning('请先在表格中选择一条唛头记录'); else alert('请先选择一条记录'); return; }
+      if (typeof ConfirmModal!=='undefined') {
+        ConfirmModal.show({ title:'编辑唛头', message:'将打开编辑面板修改所选唛头信息', confirmText:'确定编辑', cancelText:'取消', type:'info', onConfirm:()=>{ openAddModal(); } });
+      } else { openAddModal(); }
+    }
+
+    function deleteMark() {
+      if (!selectedMarkId) { if (typeof Toast!=='undefined') Toast.warning('请先在表格中选择一条唛头记录'); else alert('请先选择一条记录'); return; }
+      if (typeof ConfirmModal!=='undefined') {
+        ConfirmModal.show({ title:'确认删除', message:'确定要永久删除该唛头记录吗？此操作不可恢复。', confirmText:'确认删除', cancelText:'取消', type:'danger', onConfirm:async()=>{
+          if (window.DataService) { const {error}=await DataService.markLibrary.remove(selectedMarkId); if(!error && typeof Toast!=='undefined') Toast.success('已删除'); }
+          selectedMarkId = null;
+        }});
+      } else { if(confirm('确定删除？')){ selectedMarkId=null; alert('已删除'); } }
+    }
+
+    function batchExport() {
+      if (typeof ExportExcel!=='undefined') {
+        const rows = []; document.querySelectorAll('.table-row').forEach(r=>{ const cells=r.querySelectorAll('.table-cell'); if(cells.length>=4) rows.push({唛头编号:cells[0]?.textContent||'',花型:cells[1]?.textContent||'',规格:cells[2]?.textContent||'',创建时间:cells[3]?.textContent||'' }); });
+        if (rows.length===0) { if (typeof Toast!=='undefined') Toast.warning('无数据可导出'); return; }
+        ExportExcel.download(rows, '唛头库_' + new Date().toISOString().split('T')[0]);
+      } else { alert('导出功能未加载'); }
+    }
+
+    function batchImport() {
+      const input = document.createElement('input'); input.type='file'; input.accept='.csv,.xlsx,.xls';
+      input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (typeof Loading!=='undefined') Loading.show('导入中...');
+        const reader = new FileReader();
+        reader.onload = async function(ev) {
+          const text = ev.target.result;
+          const lines = text.split('\n').filter(l=>l.trim());
+          if (lines.length<2) { if(typeof Loading!=='undefined') Loading.hide(); if(typeof Toast!=='undefined') Toast.error('文件格式不正确'); return; }
+          let imported=0;
+          for (let i=1;i<lines.length;i++) {
+            const cols = lines[i].split(',');
+            if (cols.length>=2 && window.DataService) {
+              await DataService.markLibrary.create({ mark_code: (cols[0]||'').trim(), description: (cols[1]||'').trim(), category: (cols[2]||'').trim() });
+              imported++;
+            }
+          }
+          if (typeof Loading!=='undefined') Loading.hide();
+          if (typeof Toast!=='undefined') Toast.success(`成功导入 ${imported} 条记录`);
+          else alert(`导入完成：${imported} 条`);
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    // 表格行点击选择
+    document.addEventListener('DOMContentLoaded', ()=>{
+      document.querySelectorAll('.table-row').forEach(row=>{
+        row.addEventListener('click', function(){
+          document.querySelectorAll('.table-row').forEach(r=>r.style.background='');
+          this.style.background='#eff4ff';
+          selectedMarkId = this.dataset.id || 'row_'+Date.now();
+        });
+      });
+    });
+  </script>
+</body>
+</html>

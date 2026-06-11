@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI对话查询 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .message-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message-item {
+      display: flex;
+      gap: 12px;
+    }
+    .message-item.user {
+      flex-direction: row-reverse;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .avatar.user {
+      background: #3b82f6;
+      color: white;
+    }
+    .avatar.ai {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      color: white;
+    }
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 16px;
+    }
+    .message-item.user .message-content {
+      background: #3b82f6;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .message-item.ai .message-content {
+      background: white;
+      color: #374151;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .message-text {
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .message-time {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 4px;
+      text-align: right;
+    }
+    .message-item.user .message-time {
+      color: rgba(255,255,255,0.7);
+    }
+    .chart-card {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 12px 0;
+    }
+    .chart-placeholder {
+      height: 120px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-placeholder i {
+      font-size: 32px;
+      color: #9ca3af;
+      opacity: 0.5;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    .data-table th, .data-table td {
+      padding: 8px;
+      text-align: left;
+      font-size: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .data-table th {
+      background: #f3f4f6;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .action-btn {
+      padding: 8px 14px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+    }
+    .action-btn:hover {
+      background: #e5e7eb;
+    }
+    .input-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    .input-box {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 24px;
+      font-size: 14px;
+    }
+    .input-box:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .quick-questions {
+      padding: 16px;
+      background: white;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .quick-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      margin: 0 0 12px 0;
+    }
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .quick-tag {
+      padding: 6px 14px;
+      background: #f3f4f6;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #374151;
+      cursor: pointer;
+    }
+    .quick-tag:hover {
+      background: #e5e7eb;
+    }
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      max-width: 70%;
+    }
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ca3af;
+      animation: typing 1.4s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(1) { animation-delay: 0s; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 80%, 100% { opacity: 0.2; }
+      40% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">AI业务助手</h1>
+    <p class="header-subtitle">智能问答与数据分析</p>
+  </div>
+
+  <div class="quick-questions">
+    <p class="quick-title">快捷问题</p>
+    <div class="quick-tags">
+      <span class="quick-tag">本月回款情况</span>
+      <span class="quick-tag">延期订单统计</span>
+      <span class="quick-tag">工厂效率分析</span>
+      <span class="quick-tag">客户利润排行</span>
+      <span class="quick-tag">库存预警</span>
+    </div>
+  </div>
+
+  <div class="chat-container">
+    <div class="message-list">
+      <div class="message-item ai">
+        <div class="avatar ai">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="message-content">
+          <p class="message-text">您好！我是捷隆纺织的AI助手，请问有什么可以帮您的？</p>
+        </div>
+      </div>
+
+      <div class="message-item user">
+        <div class="avatar user">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="message-content">
+          <p class="message-text">帮我分析一下本月的销售和利润情况</p>
+          <p class="message-time">10:30</p>
+        </div>
+      </div>
+
+      <div class="message-item ai">
+        <div class="avatar ai">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="message-content">
+          <p class="message-text">好的，我来为您分析本月的销售和利润数据：</p>
+          <div class="chart-card">
+            <p class="chart-title">本月销售趋势</p>
+            <div class="chart-placeholder">
+              <i class="fas fa-chart-bar"></i>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>指标</th>
+                <th>金额</th>
+                <th>同比</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>销售额</td>
+                <td>$1,250,000</td>
+                <td>+12.5%</td>
+              </tr>
+              <tr>
+                <td>毛利</td>
+                <td>$287,500</td>
+                <td>+8.3%</td>
+              </tr>
+              <tr>
+                <td>毛利率</td>
+                <td>23.0%</td>
+                <td>-1.2%</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="action-buttons">
+            <span class="action-btn">查看详情</span>
+            <span class="action-btn">导出报表</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="message-item user">
+        <div class="avatar user">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="message-content">
+          <p class="message-text">有哪些订单逾期了？</p>
+          <p class="message-time">10:35</p>
+        </div>
+      </div>
+
+      <div class="message-item ai">
+        <div class="avatar ai">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="message-content">
+          <p class="message-text">当前有 <strong>3个订单</strong> 处于逾期状态：</p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>客户</th>
+                <th>逾期天数</th>
+                <th>金额</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>PL-2026-0001</td>
+                <td>ABC Trading</td>
+                <td>95天</td>
+                <td>$50,000</td>
+              </tr>
+              <tr>
+                <td>PL-2026-0005</td>
+                <td>Euro Textile</td>
+                <td>45天</td>
+                <td>$35,000</td>
+              </tr>
+              <tr>
+                <td>PL-2026-0008</td>
+                <td>USA Apparel</td>
+                <td>15天</td>
+                <td>$28,000</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="action-buttons">
+            <span class="action-btn">催款提醒</span>
+            <span class="action-btn">查看详情</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <input type="text" class="input-box" placeholder="输入您的问题..." aria-label="输入问题">
+    <button class="send-btn" onclick="sendMessage()" aria-label="发送">
+      <i class="fas fa-paper-plane" aria-hidden="true"></i>
+    </button>
+  </div>
+</body>
+</html>
+
+<script>
+  // 页面初始化
+  document.addEventListener('DOMContentLoaded', function() {
+    // 初始化AI上下文
+    AIContext.init();
+    
+    // 恢复对话历史
+    restoreConversationHistory();
+    
+    // 绑定快捷问题点击
+    bindQuickQuestions();
+    
+    // 绑定输入框事件
+    bindInputEvents();
+    
+    // 绑定快捷键（可能不可用，忽略错误）
+    try { KeyboardShortcuts.register('Enter', function() { sendMessage(); }); } catch(e) {}
+  });
+
+  // 恢复对话历史
+  function restoreConversationHistory() {
+    const history = AIContext.getHistory();
+    if (history.length > 0) {
+      const messageList = document.querySelector('.message-list');
+      
+      // 清空默认消息
+      messageList.innerHTML = '';
+      
+      // 添加历史消息
+      history.forEach(item => {
+        addMessageToUI(item.question, 'user');
+        addMessageToUI(item.answer, 'ai');
+      });
+      
+      // 添加欢迎消息
+      addMessageToUI('继续我们之前的对话，请问还有什么需要帮助的？', 'ai');
+      
+      Toast.info('已恢复对话历史');
+    }
+  }
+
+  // 绑定快捷问题
+  function bindQuickQuestions() {
+    document.querySelectorAll('.quick-tag').forEach(tag => {
+      tag.addEventListener('click', function() {
+        const question = this.textContent;
+        sendQuestion(question);
+      });
+      
+      // 键盘支持
+      tag.setAttribute('tabindex', '0');
+      tag.setAttribute('role', 'button');
+      tag.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          const question = this.textContent;
+          sendQuestion(question);
+        }
+      });
+    });
+  }
+
+  // 绑定输入框事件
+  function bindInputEvents() {
+    var input = document.querySelector('.input-box');
+    if (!input) { console.warn('input-box not found'); return; }
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  }
+
+  // 发送消息
+  function sendMessage() {
+    var input = document.querySelector('.input-box');
+    if (!input) { console.warn('input-box not found'); return; }
+    var message = input.value.trim();
+    if (!message) { return; }
+    sendQuestion(message);
+    input.value = '';
+  }
+
+  // 发送问题
+  function sendQuestion(question) {
+    // 添加用户消息
+    addMessageToUI(question, 'user');
+    
+    // 显示打字指示器
+    showTypingIndicator();
+    
+    // 模拟AI处理
+    var context = typeof AIContext !== 'undefined' ? AIContext.buildContextPrompt() : '';
+      generateAIResponse(question, context).then(function(answer) {
+        hideTypingIndicator();
+        addMessageToUI(answer, 'ai');
+        // 保存到历史
+        if (typeof AIContext !== 'undefined') AIContext.addExchange(question, answer);
+        scrollToBottom();
+      });
+  }
+
+  // AI API 配置（火山引擎豆包 - 仅存本地文件）
+  var AI_API_KEY = 'ark-2121c3ae-74e8-45b5-94d6-582ca42e6465-fb35f';
+  var AI_BASE = 'https://ark.cn-beijing.volces.com/api/v3';
+
+  async function generateAIResponse(question, context) {
+    try {
+      var resp = await fetch(AI_BASE + '/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI_API_KEY },
+        body: JSON.stringify({
+          model: 'ep-20260611105257-brwqw',
+          messages: [
+            { role: 'system', content: '你是捷隆纺织的AI业务助手，帮助分析订单、财务、生产数据。简洁专业，用中文回答。' },
+            { role: 'user', content: question }
+          ],
+          max_tokens: 800, temperature: 0.7
+        })
+      });
+      if (resp.ok) { var d = await resp.json(); return d.choices[0].message.content; }
+      throw new Error('API ' + resp.status);
+    } catch(e) {
+      console.warn('AI API error:', e.message);
+      return 'AI 暂不可用。请检查：1. API Key 2. 火山引擎是否已开通豆包 3. Endpoint ID';
+    }
+  }
+
+  // 旧本地匹配（保留不用）
+
+// 添加消息到UI
+  function addMessageToUI(message, type) {
+    const messageList = document.querySelector('.message-list');
+    const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    
+    const messageHTML = `
+      <div class="message-item ${type}">
+        <div class="avatar ${type}">
+          <i class="fas ${type === 'user' ? 'fa-user' : 'fa-brain'}"></i>
+        </div>
+        <div class="message-content">
+          <p class="message-text">${message.replace(/\n/g, '<br>')}</p>
+          <p class="message-time">${time}</p>
+        </div>
+      </div>
+    `;
+    
+    messageList.insertAdjacentHTML('beforeend', messageHTML);
+    scrollToBottom();
+  }
+
+  // 显示打字指示器
+  function showTypingIndicator() {
+    const messageList = document.querySelector('.message-list');
+    const indicatorHTML = `
+      <div class="message-item ai" id="typingIndicator">
+        <div class="avatar ai">
+          <i class="fas fa-brain"></i>
+        </div>
+        <div class="message-content">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    messageList.insertAdjacentHTML('beforeend', indicatorHTML);
+    scrollToBottom();
+  }
+
+  // 隐藏打字指示器
+  function hideTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+      indicator.remove();
+    }
+  }
+
+  // 滚动到底部
+  function scrollToBottom() {
+    const chatContainer = document.querySelector('.chat-container');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  // 清空对话历史
+  function clearHistory() {
+    ConfirmModal.show({
+      title: '清空历史',
+      message: '确定要清空所有对话历史吗？此操作不可恢复。',
+      confirmText: '确认清空',
+      cancelText: '取消',
+      type: 'warning',
+      onConfirm: () => {
+        AIContext.clearHistory();
+        
+        // 重置UI
+        const messageList = document.querySelector('.message-list');
+        messageList.innerHTML = `
+          <div class="message-item ai">
+            <div class="avatar ai">
+              <i class="fas fa-brain"></i>
+            </div>
+            <div class="message-content">
+              <p class="message-text">您好！我是捷隆纺织的AI助手，请问有什么可以帮您的？</p>
+            </div>
+          </div>
+        `;
+        
+        Toast.success('对话历史已清空');
+      }
+    });
+  }
+
+  // 通用导航函数
+  function navigateTo(page) {
+    // 尝试使用父窗口的导航
+    if (window.parent && window.parent !== window) {
+      if (typeof window.parent.navigateTo === 'function') {
+        window.parent.navigateTo(page);
+      } else if (typeof window.parent.loadPage === 'function') {
+        window.parent.loadPage(page);
+      } else {
+        // 发送消息通知父窗口
+        window.parent.postMessage({ type: 'navigate', page: page }, '*');
+      }
+    } else {
+      // 直接访问，使用相对路径
+      window.location.href = '../' + page;
+    }
+  }
+</script>

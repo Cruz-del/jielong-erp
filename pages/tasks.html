@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>待办任务中心 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    :root{--bg:#eef0f4;--card:#fff;--text:#1e293b;--text2:#64748b;--border:#e8ecf1;--accent:#2563eb;--danger:#ef4444;--success:#10b981;--warn:#f59e0b;--shadow:0 1px 2px rgba(0,0,0,.03),0 2px 8px rgba(0,0,0,.04)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);min-height:100vh;padding-bottom:20px;-webkit-font-smoothing:antialiased}
+    .header{background:linear-gradient(155deg,#0f2744,#1b3d62 40%,#1e4d7b);padding:20px 16px;color:#fff;position:relative;overflow:hidden}
+    .header::after{content:'';position:absolute;top:-40px;right:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 70%);border-radius:50%}
+    .header-title{font-size:19px;font-weight:700;margin:0;position:relative;z-index:1}
+    .header-subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;position:relative;z-index:1}
+
+    .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
+    .stat-card{background:var(--card);border-radius:14px;padding:16px 10px;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .stat-card.today::before{background:var(--danger)}
+    .stat-card.pending::before{background:var(--accent)}
+    .stat-card.done::before{background:var(--success)}
+    .stat-value{font-size:26px;font-weight:800;color:var(--text);margin:0;line-height:1}
+    .stat-card.today .stat-value{color:var(--danger)}
+    .stat-card.done .stat-value{color:var(--success)}
+    .stat-label{font-size:11px;color:var(--text2);margin-top:5px;font-weight:500}
+
+    .filter-bar{display:flex;gap:7px;padding:0 14px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .filter-bar::-webkit-scrollbar{display:none}
+    .filter-tag{padding:7px 15px;border-radius:20px;font-size:12px;cursor:pointer;border:1.5px solid var(--border);color:var(--text2);white-space:nowrap;font-weight:500;background:var(--card);transition:all .2s}
+    .filter-tag.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 8px rgba(37,99,235,.2)}
+
+    .task-list{padding:0 14px;display:flex;flex-direction:column;gap:10px}
+    .task-card{background:var(--card);border-radius:14px;padding:16px;box-shadow:var(--shadow);border-left:4px solid transparent;transition:all .2s}
+    .task-card:active{transform:scale(.985)}
+    .task-card.urgent{border-left-color:var(--danger);background:linear-gradient(135deg,#fff 0%,#fef2f2 100%)}
+    .task-card.important{border-left-color:var(--warn)}
+    .task-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .task-title{font-size:14.5px;font-weight:700;color:var(--text);margin:0;flex:1;margin-right:10px}
+    .priority-badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap}
+    .priority-badge.high{background:#fee2e2;color:var(--danger)}
+    .priority-badge.medium{background:#fef3c7;color:#d97706}
+    .priority-badge.low{background:#dbeafe;color:var(--accent)}
+    .task-meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;font-size:11.5px;color:var(--text2)}
+    .task-meta i{width:14px;text-align:center;margin-right:3px}
+    .task-actions{display:flex;gap:8px;padding-top:10px;border-top:1px solid #f3f4f6}
+    .btn-sm{flex:1;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s}
+    .btn-sm:active{transform:scale(.97)}
+    .btn-sm.primary{background:var(--success);color:#fff}
+    .btn-sm.warning{background:#fef3c7;color:#b45309}
+    .btn-sm.secondary{background:#f3f4f6;color:var(--text)}
+    .btn-sm.new{background:var(--accent);color:#fff;margin-bottom:12px;padding:12px;border-radius:10px;font-size:13px;font-weight:600;width:100%}
+
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:24px}
+    .modal.show{display:flex}
+    .modal-card{background:#fff;border-radius:18px;padding:24px;width:100%;max-width:340px}
+    .modal-title{font-size:17px;font-weight:700;color:var(--text);margin:0 0 16px 0}
+    .modal textarea{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;resize:none;height:80px;font-family:inherit;outline:none}
+    .modal textarea:focus{border-color:var(--accent)}
+    .modal .btn-row{display:flex;gap:10px;margin-top:16px}
+    .empty-state{text-align:center;padding:60px 24px;color:var(--text2)}
+    .empty-state i{font-size:48px;margin-bottom:12px;opacity:.4}
+    .empty-state p{font-size:14px;margin:0}
+    .empty-state .btn-sm{display:inline-flex;margin-top:16px}
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1 class="header-title">待办任务中心</h1>
+  <p class="header-subtitle">节点驱动 · 自动分派 · 逾期预警</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-card today"><p class="stat-value" id="statToday">—</p><p class="stat-label">今日到期</p></div>
+  <div class="stat-card pending"><p class="stat-value" id="statPending">—</p><p class="stat-label">待处理</p></div>
+  <div class="stat-card done"><p class="stat-value" id="statDone">—</p><p class="stat-label">已完成</p></div>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <span class="filter-tag active" data-filter="all">全部</span>
+  <span class="filter-tag" data-filter="03">03 设计</span>
+  <span class="filter-tag" data-filter="04">04 生产</span>
+  <span class="filter-tag" data-filter="05">05 QC</span>
+  <span class="filter-tag" data-filter="06">06 装箱</span>
+  <span class="filter-tag" data-filter="07">07 出货</span>
+  <span class="filter-tag" data-filter="09">09 回款</span>
+  <span class="filter-tag" data-filter="completed">已完成</span>
+</div>
+
+<div style="padding:0 14px;margin-bottom:4px">
+  <button class="btn-sm new" onclick="openNewTaskModal()"><i class="fas fa-plus"></i> 新建任务</button>
+</div>
+
+<div class="task-list" id="taskList">
+  <div class="empty-state"><i class="fas fa-spinner fa-pulse"></i><p>加载中...</p></div>
+</div>
+
+<!-- Delay Modal -->
+<div class="modal" id="delayModal">
+  <div class="modal-card">
+    <h3 class="modal-title">申请延期</h3>
+    <div><label style="font-size:12px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">延期原因</label>
+    <textarea id="delayReason" placeholder="请输入延期原因..."></textarea></div>
+    <div class="btn-row">
+      <button class="btn-sm secondary" onclick="closeDelayModal()" style="flex:1;padding:12px">取消</button>
+      <button class="btn-sm warning" onclick="submitDelay()" style="flex:1;padding:12px">提交申请</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Task Modal -->
+<div class="modal" id="newTaskModal">
+  <div class="modal-card">
+    <h3 class="modal-title">新建任务</h3>
+    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">任务标题 *</label><input id="newTaskTitle" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;outline:none;font-family:inherit" placeholder="输入任务名称"></div>
+    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">关联订单 (可选)</label><input id="newTaskOrder" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;outline:none;font-family:inherit" placeholder="如 PL-2026-0001"></div>
+    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">优先级</label><select id="newTaskPriority" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;font-size:14px"><option value="medium">重要</option><option value="high">紧急</option><option value="low">普通</option></select></div>
+    <div class="btn-row">
+      <button class="btn-sm secondary" onclick="closeNewTaskModal()" style="flex:1;padding:12px">取消</button>
+      <button class="btn-sm primary" onclick="createNewTask()" style="flex:1;padding:12px;background:var(--accent)">创建</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allTasks = [];
+let currentFilter = 'all';
+let delayTaskId = null;
+
+// ===== Load Tasks =====
+async function loadTasks() {
+  // Try DataService
+  if (window.DataService) {
+    try {
+      const { data } = await DataService.tasks.list({ myTasks: true });
+      if (data && data.length > 0) { allTasks = data; render(); updateStats(); return; }
+    } catch(e) { console.warn('云端加载失败:', e.message); }
+  }
+  // LocalStorage fallback
+  const local = JSON.parse(localStorage.getItem('tasks') || '[]');
+  if (local.length > 0) { allTasks = local; render(); updateStats(); return; }
+  // Demo data for empty state
+  allTasks = [
+    { id:'t1', title:'确认 PL-2026-0001 设计稿', priority:'high', status:'pending', order_pl:'PL-2026-0001', customer:'ABC Trading', due:'2026-06-09', node:'03', nodeName:'设计确认' },
+    { id:'t2', title:'PL-2026-0005 生产排期', priority:'medium', status:'pending', order_pl:'PL-2026-0005', customer:'Euro Textile', due:'2026-06-10', node:'04', nodeName:'工厂生产' },
+    { id:'t3', title:'PL-2026-0008 QC验货', priority:'low', status:'pending', order_pl:'PL-2026-0008', customer:'USA Apparel', due:'2026-06-10', node:'05', nodeName:'QC检验' },
+    { id:'t4', title:'催款提醒 - PL-2026-0001', priority:'high', status:'pending', order_pl:'PL-2026-0001', customer:'ABC Trading', due:'2026-03-05', node:'09', nodeName:'回款', overdue:'95天' }
+  ];
+  render(); updateStats();
+}
+
+// ===== Render =====
+function render() {
+  const container = document.getElementById('taskList');
+  let tasks = allTasks;
+  if (currentFilter === 'completed') tasks = allTasks.filter(t => t.status === 'completed');
+  else if (currentFilter !== 'all') tasks = allTasks.filter(t => t.node === currentFilter && t.status !== 'completed');
+
+  if (tasks.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><p>暂无任务</p></div>';
+    return;
+  }
+
+  container.innerHTML = tasks.map(t => {
+    const priCls = t.priority === 'high' ? 'urgent' : t.priority === 'medium' ? 'important' : '';
+    const priBadge = t.priority === 'high' ? '<span class="priority-badge high">紧急</span>' : t.priority === 'medium' ? '<span class="priority-badge medium">重要</span>' : '<span class="priority-badge low">普通</span>';
+    const overdue = t.overdue ? `<span style="color:var(--danger);font-weight:600">逾期${t.overdue}</span>` : (t.due||'');
+    const isDone = t.status === 'completed';
+    return `<div class="task-card ${priCls}" style="${isDone?'opacity:.6':''}">
+      <div class="task-header"><h3 class="task-title" style="${isDone?'text-decoration:line-through':''}">${t.title}</h3>${priBadge}</div>
+      <div class="task-meta">
+        <span><i class="fas fa-file-text"></i> ${t.order_pl||'—'}</span>
+        <span><i class="fas fa-building"></i> ${t.customer||'—'}</span>
+        <span><i class="fas fa-clock"></i> ${overdue}</span>
+        <span style="background:#eff4ff;color:var(--accent);padding:1px 6px;border-radius:3px">节点${t.node||'—'}</span>
+      </div>
+      ${isDone ? '<div style="font-size:12px;color:var(--success)"><i class="fas fa-check-circle"></i> 已完成</div>' :
+      `<div class="task-actions">
+        <button class="btn-sm primary" onclick="completeTask('${t.id}')"><i class="fas fa-check"></i> 完成</button>
+        <button class="btn-sm warning" onclick="openDelayModal('${t.id}')"><i class="fas fa-clock"></i> 延期</button>
+        <button class="btn-sm secondary" onclick="viewOrder('${t.order_pl||''}','${t.id}')"><i class="fas fa-eye"></i> 详情</button>
+      </div>`}
+    </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('statToday').textContent = allTasks.filter(t => t.due === today && t.status !== 'completed').length;
+  document.getElementById('statPending').textContent = allTasks.filter(t => t.status !== 'completed').length;
+  document.getElementById('statDone').textContent = allTasks.filter(t => t.status === 'completed').length;
+}
+
+// ===== Actions =====
+async function completeTask(taskId) {
+  if (typeof Loading !== 'undefined') Loading.show('处理中...');
+  // Update in DataService
+  if (window.DataService) {
+    try { await DataService.tasks.complete(taskId); } catch(e) { console.warn(e); }
+  }
+  // Update local
+  const idx = allTasks.findIndex(t => t.id === taskId);
+  if (idx !== -1) { allTasks[idx].status = 'completed'; saveLocal(); }
+  if (typeof Loading !== 'undefined') Loading.hide();
+  if (typeof Toast !== 'undefined') Toast.success('任务已完成');
+  render(); updateStats();
+}
+
+function openDelayModal(taskId) {
+  delayTaskId = taskId;
+  document.getElementById('delayModal').classList.add('show');
+  document.getElementById('delayReason').value = '';
+}
+function closeDelayModal() { document.getElementById('delayModal').classList.remove('show'); }
+
+async function submitDelay() {
+  const reason = document.getElementById('delayReason').value.trim();
+  if (!reason) { if(typeof Toast!=='undefined') Toast.warning('请填写延期原因'); return; }
+  closeDelayModal();
+  // Mark task as delayed
+  const idx = allTasks.findIndex(t => t.id === delayTaskId);
+  if (idx !== -1) {
+    allTasks[idx].delayed = true; allTasks[idx].delayReason = reason;
+    saveLocal();
+    // Also mark associated order as delayed
+    const pl = allTasks[idx].order_pl;
+    if (pl && window.DataService) {
+      try {
+        const { data: orders } = await DataService.orders.list({ search: pl });
+        if (orders && orders.length > 0) {
+          await DataService.orders.update(orders[0].id, { is_delayed: true, delay_reason: reason, delay_days: allTasks[idx].overdue ? parseInt(allTasks[idx].overdue) : 1 });
+        }
+      } catch(e) { console.warn(e); }
+    }
+  }
+  if (typeof Toast !== 'undefined') Toast.success('延期申请已提交');
+  render(); updateStats();
+}
+
+function viewOrder(plNumber, taskId) {
+  if (window.parent && typeof window.parent.loadPage === 'function') {
+    window.parent.loadPage('pages/order-detail.html?id=' + (plNumber || taskId));
+  }
+}
+
+// ===== New Task =====
+function openNewTaskModal() { document.getElementById('newTaskModal').classList.add('show'); }
+function closeNewTaskModal() { document.getElementById('newTaskModal').classList.remove('show'); }
+
+async function createNewTask() {
+  const title = document.getElementById('newTaskTitle').value.trim();
+  if (!title) { if(typeof Toast!=='undefined') Toast.warning('请输入任务标题'); return; }
+  const orderPl = document.getElementById('newTaskOrder').value.trim();
+  const priority = document.getElementById('newTaskPriority').value;
+
+  const newTask = {
+    id: 't_' + Date.now(),
+    title,
+    priority,
+    status: 'pending',
+    order_pl: orderPl || null,
+    node: '02',
+    nodeName: '手动创建',
+    due: new Date().toISOString().split('T')[0]
+  };
+
+  if (window.DataService) {
+    try { await DataService.tasks.create({ title, priority, description: orderPl ? '关联订单: '+orderPl : '' }); } catch(e) { console.warn(e); }
+  }
+
+  allTasks.unshift(newTask);
+  saveLocal();
+  closeNewTaskModal();
+  if (typeof Toast !== 'undefined') Toast.success('任务已创建');
+  render(); updateStats();
+}
+
+function saveLocal() {
+  try { localStorage.setItem('tasks', JSON.stringify(allTasks)); } catch(e) {}
+}
+
+// ===== Filters =====
+document.addEventListener('DOMContentLoaded', () => {
+  loadTasks();
+  document.querySelectorAll('#filterBar .filter-tag').forEach(tag => {
+    tag.addEventListener('click', function() {
+      document.querySelectorAll('#filterBar .filter-tag').forEach(t=>t.classList.remove('active'));
+      this.classList.add('active');
+      currentFilter = this.dataset.filter;
+      render();
+    });
+  });
+});
+</script>
+</body>
+</html>

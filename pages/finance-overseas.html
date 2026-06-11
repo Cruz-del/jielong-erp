@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>海外仓看板 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .warehouse-select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+    }
+    .action-btn {
+      padding: 8px 14px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cards-section {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .stat-card.warning .stat-value {
+      color: #f59e0b;
+    }
+    .stat-card.danger .stat-value {
+      color: #dc2626;
+    }
+    .ring-chart-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .chart-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 16px 0;
+    }
+    .ring-chart {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .ring-container {
+      width: 120px;
+      height: 120px;
+      position: relative;
+    }
+    .ring-bg {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: #e5e7eb;
+    }
+    .ring-fill {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: conic-gradient(#3b82f6 0deg, #3b82f6 252deg, transparent 252deg);
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .ring-center {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: white;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 16px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .legend-dot.used {
+      background: #3b82f6;
+    }
+    .legend-dot.empty {
+      background: #e5e7eb;
+    }
+    .legend-label {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .table-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .table-info {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .status-stock {
+      color: #10b981;
+    }
+    .status-overdue {
+      color: #dc2626;
+    }
+    .stock-row {
+      cursor: pointer;
+    }
+    .btn-section {
+      padding: 0 16px 24px;
+    }
+    .btn-full {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 16px 0;
+    }
+    .detail-info {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .detail-label {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .detail-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: #1f2937;
+    }
+    .trans-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 16px 0 12px 0;
+    }
+    .trans-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .trans-item {
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .trans-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .trans-type {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .trans-type.in {
+      color: #10b981;
+    }
+    .trans-type.out {
+      color: #dc2626;
+    }
+    .trans-date {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .trans-detail {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .btn-section-modal {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-half {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-half.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">海外仓看板</h1>
+    <p class="header-subtitle">美国仓库存管理</p>
+  </div>
+
+  <div class="filter-bar">
+    <select class="warehouse-select">
+      <option>美国仓</option>
+      <option>欧洲仓</option>
+      <option>东南亚仓</option>
+    </select>
+    <button class="action-btn">
+      <i class="fas fa-refresh"></i> 对账
+    </button>
+  </div>
+
+  <div class="cards-section">
+    <div class="stat-card">
+      <p class="stat-value">126</p>
+      <p class="stat-label">在途货物</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-value">2,845</p>
+      <p class="stat-label">当前库存量</p>
+    </div>
+    <div class="stat-card warning">
+      <p class="stat-value">15.2%</p>
+      <p class="stat-label">滞销品占比</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-value">70%</p>
+      <p class="stat-label">仓位利用率</p>
+    </div>
+  </div>
+
+  <div class="ring-chart-section">
+    <h3 class="chart-title">仓位利用率</h3>
+    <div class="ring-chart">
+      <div class="ring-container">
+        <div class="ring-bg"></div>
+        <div class="ring-fill"></div>
+        <div class="ring-center">
+          <span class="ring-value">70%</span>
+        </div>
+      </div>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item">
+        <span class="legend-dot used"></span>
+        <span class="legend-label">已使用</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot empty"></span>
+        <span class="legend-label">空闲</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <p class="table-title">库存明细</p>
+      <span class="table-info">共 45 种SKU</span>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>SKU/花型</th>
+            <th>在库数量</th>
+            <th>在途数量</th>
+            <th>滞销天数</th>
+            <th>关联订单</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="stock-row" onclick="openDetailModal()">
+            <td>HX-2026-001</td>
+            <td class="status-stock">520</td>
+            <td>80</td>
+            <td class="status-overdue">45</td>
+            <td>PL-2026-001</td>
+          </tr>
+          <tr class="stock-row" onclick="openDetailModal()">
+            <td>ZW-2026-002</td>
+            <td class="status-stock">380</td>
+            <td>0</td>
+            <td>12</td>
+            <td>PL-2026-002</td>
+          </tr>
+          <tr class="stock-row" onclick="openDetailModal()">
+            <td>JH-2026-003</td>
+            <td class="status-stock">1,250</td>
+            <td>150</td>
+            <td>3</td>
+            <td>PL-2026-003</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="btn-section">
+    <button class="btn-full secondary">
+      <i class="fas fa-download"></i> 导出库存报表
+    </button>
+  </div>
+
+  <div class="modal" id="detailModal">
+    <div class="modal-content">
+      <h3 class="modal-title">库存详情</h3>
+      <div class="detail-info">
+        <span class="detail-label">SKU</span>
+        <span class="detail-value">HX-2026-001</span>
+      </div>
+      <div class="detail-info">
+        <span class="detail-label">花型名称</span>
+        <span class="detail-value">花卉系列</span>
+      </div>
+      <div class="detail-info">
+        <span class="detail-label">在库数量</span>
+        <span class="detail-value">520</span>
+      </div>
+      <div class="detail-info">
+        <span class="detail-label">在途数量</span>
+        <span class="detail-value">80</span>
+      </div>
+      <div class="detail-info">
+        <span class="detail-label">滞销天数</span>
+        <span class="detail-value">45天</span>
+      </div>
+      <h4 class="trans-title">出入库记录</h4>
+      <ul class="trans-list">
+        <li class="trans-item">
+          <div class="trans-header">
+            <span class="trans-type in">入库</span>
+            <span class="trans-date">2026-06-01</span>
+          </div>
+          <p class="trans-detail">采购入库 200件</p>
+        </li>
+        <li class="trans-item">
+          <div class="trans-header">
+            <span class="trans-type out">出库</span>
+            <span class="trans-date">2026-05-28</span>
+          </div>
+          <p class="trans-detail">订单PL-2026-005 发货 150件</p>
+        </li>
+      </ul>
+      <div class="btn-section-modal">
+        <button class="btn-half secondary" onclick="closeDetailModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openDetailModal() { document.getElementById('detailModal').classList.add('active'); }
+    function closeDetailModal() { document.getElementById('detailModal').classList.remove('active'); }
+
+    async function loadOverseasData() {
+      if (!window.DataService) return;
+      try {
+        var { data: orders } = await DataService.orders.list({ limit: 100 });
+        var shipped = (orders || []).filter(function(o) { return o.status === '出货' || o.status === '已完成'; });
+        var inTransit = (orders || []).filter(function(o) { return o.status === '装箱'; });
+
+        // 更新统计卡片
+        var vals = document.querySelectorAll('.stat-value');
+        if (vals.length >= 4) {
+          vals[0].textContent = shipped.length + inTransit.length;
+          vals[1].textContent = inTransit.reduce(function(s,o) { return s + (parseFloat(o.quantity)||0); }, 0);
+          // 周转率（简化）
+          vals[2].textContent = shipped.length > 0 ? (shipped.length / ((orders||[]).length || 1) * 100).toFixed(1) + '%' : '0%';
+          vals[3].textContent = shipped.length > 0 ? Math.round(shipped.length / ((orders||[]).length || 1) * 100) + '%' : '0%';
+        }
+
+        // 渲染海外仓订单表
+        var tbody = document.querySelector('.data-table tbody');
+        if (tbody) {
+          var rows = shipped.concat(inTransit).slice(0, 10);
+          tbody.innerHTML = rows.map(function(o) {
+            var loc = o.dest_port || o.port_of_destination || '海外仓';
+            return '<tr onclick="viewOrder(\'' + o.id + '\')" style="cursor:pointer"><td>' + (o.pl_number||'') + '</td><td>' + (o.customer_name||'') + '</td><td>' + (o.quantity||0) + ' ' + (o.unit||'m') + '</td><td>' + (o.status||'') + '</td><td>' + loc + '</td><td>' + new Date(o.updated_at||o.created_at).toLocaleDateString() + '</td></tr>';
+          }).join('') || '<tr><td colspan="6" style="text-align:center;color:#9ca3af">暂无海外仓数据</td></tr>';
+        }
+      } catch(e) { console.warn('Overseas load:', e.message); }
+    }
+
+    function viewOrder(id) {
+      if (window.parent && typeof window.parent.loadPage === 'function') {
+        window.parent.loadPage('pages/order-detail.html?id=' + id);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadOverseasData);
+  </script>
+</body>
+</html>

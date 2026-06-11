@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>老板驾驶舱 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .date-select {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+    }
+    .cards-section {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .kpi-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .kpi-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0 0 8px 0;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0 0 4px 0;
+    }
+    .kpi-trend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+    }
+    .kpi-trend.up {
+      color: #10b981;
+    }
+    .kpi-trend.down {
+      color: #dc2626;
+    }
+    .kpi-card.warning .kpi-value {
+      color: #dc2626;
+    }
+    .chart-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .chart-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 16px 0;
+    }
+    .chart-placeholder {
+      height: 180px;
+      background: #f9fafb;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-placeholder i {
+      font-size: 40px;
+      color: #9ca3af;
+      opacity: 0.5;
+    }
+    .pie-chart-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .pie-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .pie-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: conic-gradient(
+        #3b82f6 0deg, #3b82f6 144deg,
+        #f59e0b 144deg, #f59e0b 252deg,
+        #10b981 252deg, #10b981 324deg,
+        #dc2626 324deg, #dc2626 360deg
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pie-inner {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pie-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+    .pie-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+    .legend-label {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .warning-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .warning-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .warning-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .warning-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .warning-item {
+      padding: 14px;
+      background: #fff5f5;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .warning-item:hover {
+      background: #fee2e2;
+    }
+    .warning-info {
+      flex: 1;
+    }
+    .warning-title-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #dc2626;
+      margin: 0 0 4px 0;
+    }
+    .warning-desc {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .warning-arrow {
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">老板驾驶舱</h1>
+    <p class="header-subtitle">实时业务数据总览</p>
+  </div>
+
+  <div class="filter-bar">
+    <select class="date-select">
+      <option>本月</option>
+      <option>上月</option>
+      <option>本季度</option>
+      <option>自定义</option>
+    </select>
+  </div>
+
+  <div class="cards-section">
+    <div class="kpi-card">
+      <p class="kpi-label">进行中订单</p>
+      <p class="kpi-value">45</p>
+      <p class="kpi-trend up"><i class="fas fa-trend-up"></i> +5</p>
+    </div>
+    <div class="kpi-card warning">
+      <p class="kpi-label">延期订单</p>
+      <p class="kpi-value">8</p>
+      <p class="kpi-trend down"><i class="fas fa-trend-down"></i> -2</p>
+    </div>
+    <div class="kpi-card">
+      <p class="kpi-label">本月回款</p>
+      <p class="kpi-value">$287K</p>
+      <p class="kpi-trend up"><i class="fas fa-trend-up"></i> +12.5%</p>
+    </div>
+    <div class="kpi-card">
+      <p class="kpi-label">本月利润</p>
+      <p class="kpi-value">$62K</p>
+      <p class="kpi-trend up"><i class="fas fa-trend-up"></i> +8.3%</p>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h3 class="chart-title">订单趋势</h3>
+    <div class="chart-placeholder">
+      <i class="fas fa-chart-line"></i>
+    </div>
+  </div>
+
+  <div class="pie-chart-section">
+    <h3 class="chart-title">账龄分布</h3>
+    <div class="pie-container">
+      <div class="pie-circle">
+        <div class="pie-inner">
+          <span class="pie-value">45%</span>
+        </div>
+      </div>
+    </div>
+    <div class="pie-legend">
+      <div class="legend-item">
+        <span class="legend-color" style="background: #3b82f6;"></span>
+        <span class="legend-label">0-30天</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #f59e0b;"></span>
+        <span class="legend-label">30-60天</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #10b981;"></span>
+        <span class="legend-label">60-90天</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #dc2626;"></span>
+        <span class="legend-label">90+天</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="warning-section">
+    <div class="warning-header">
+      <p class="warning-title">异常预警</p>
+    </div>
+    <div class="warning-list">
+      <div class="warning-item" onclick="window.parent.loadPage('pages/dashboard.html')">
+        <div class="warning-info">
+          <p class="warning-title-text">订单PL-2026-0001逾期95天</p>
+          <p class="warning-desc">ABC Trading - $50,000</p>
+        </div>
+        <i class="warning-arrow fas fa-chevron-right"></i>
+      </div>
+      <div class="warning-item" onclick="window.parent.loadPage('pages/dashboard.html')">
+        <div class="warning-info">
+          <p class="warning-title-text">订单PL-2026-0003预计延期</p>
+          <p class="warning-desc">生产阶段 - 延期2天</p>
+        </div>
+        <i class="warning-arrow fas fa-chevron-right"></i>
+      </div>
+      <div class="warning-item" onclick="window.parent.loadPage('pages/finance-profit.html')">
+        <div class="warning-info">
+          <p class="warning-title-text">订单PL-2026-0008低毛利</p>
+          <p class="warning-desc">毛利率12% &lt; 15%阈值</p>
+        </div>
+        <i class="warning-arrow fas fa-chevron-right"></i>
+      </div>
+    </div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+var chartInstance = null;
+
+async function loadBossData() {
+  if (!window.DataService) return;
+
+  try {
+    // 1. 统计
+    var { data: stats } = await DataService.dashboard.getStats();
+    // 2. 回款
+    var { data: payments } = await DataService.finance.listPayments();
+    // 3. 延期订单
+    var { data: overdue } = await DataService.dashboard.getOverdueOrders();
+    // 4. 最近订单
+    var { data: recent } = await DataService.dashboard.getRecentOrders(20);
+
+    // 更新KPI卡片
+    var kpiValues = document.querySelectorAll('.kpi-value');
+    if (kpiValues.length >= 4) {
+      kpiValues[0].textContent = (stats && stats.processing) || '0';
+      kpiValues[1].textContent = (stats && stats.delayed) || '0';
+      // 本月回款
+      var thisMonth = new Date().getMonth();
+      var monthlyIncome = (payments || []).filter(function(p) {
+        return p.verified && new Date(p.payment_date).getMonth() === thisMonth;
+      }).reduce(function(s, p) { return s + (parseFloat(p.amount) || 0); }, 0);
+      kpiValues[2].textContent = '$' + (monthlyIncome / 1000).toFixed(0) + 'K';
+      // 利润（简化：收入-费用）
+      kpiValues[3].textContent = '$' + ((monthlyIncome * 0.22) / 1000).toFixed(0) + 'K';
+    }
+
+    // 账龄分布（pie chart）
+    var aging = { '0-30': 0, '30-60': 0, '60-90': 0, '90+': 0 };
+    var now = new Date();
+    (payments || []).filter(function(p) { return !p.verified; }).forEach(function(p) {
+      var days = Math.floor((now - new Date(p.payment_date)) / (1000 * 60 * 60 * 24));
+      if (days <= 30) aging['0-30']++;
+      else if (days <= 60) aging['30-60']++;
+      else if (days <= 90) aging['60-90']++;
+      else aging['90+']++;
+    });
+    var total = aging['0-30'] + aging['30-60'] + aging['60-90'] + aging['90+'] || 1;
+    var pieDeg = [
+      (aging['0-30'] / total * 360),
+      (aging['30-60'] / total * 360),
+      (aging['60-90'] / total * 360),
+      (aging['90+'] / total * 360)
+    ];
+    var colors = ['#3b82f6', '#f59e0b', '#10b981', '#dc2626'];
+    var pieEl = document.querySelector('.pie-circle');
+    if (pieEl) {
+      var grad = '';
+      var pos = 0;
+      colors.forEach(function(c, i) {
+        grad += c + ' ' + pos + 'deg, ' + c + ' ' + (pos + pieDeg[i]) + 'deg';
+        if (i < 3) grad += ', ';
+        pos += pieDeg[i];
+      });
+      pieEl.style.background = 'conic-gradient(' + grad + ')';
+    }
+    var pieVal = document.querySelector('.pie-value');
+    if (pieVal) pieVal.textContent = Math.round(aging['0-30'] / total * 100) + '%';
+
+    // 异常预警
+    var warnings = [];
+    (overdue || []).slice(0, 2).forEach(function(o) {
+      warnings.push({ title: '订单' + o.pl_number + '逾期' + (o.delay_days||0) + '天', desc: (o.customer_name||'') + ' - ' + o.status, page: 'order-detail.html?id=' + o.id });
+    });
+    var warningList = document.querySelector('.warning-list');
+    if (warningList && warnings.length > 0) {
+      warningList.innerHTML = warnings.map(function(w) {
+        return '<div class="warning-item" onclick="window.parent.loadPage(\'pages/' + w.page + '\')"><div class="warning-info"><p class="warning-title-text">' + w.title + '</p><p class="warning-desc">' + w.desc + '</p></div><i class="warning-arrow fas fa-chevron-right"></i></div>';
+      }).join('');
+    }
+
+    // 订单趋势图表
+    var chartEl = document.querySelector('.chart-placeholder');
+    if (chartEl && window.Chart) {
+      chartEl.innerHTML = '<canvas id="trendChart" style="width:100%;height:160px"></canvas>';
+      var ctx = document.getElementById('trendChart').getContext('2d');
+      var labels = (recent || []).slice(0, 10).reverse().map(function(o) { return o.pl_number; });
+      var data = (recent || []).slice(0, 10).reverse().map(function(o) { return o.progress || 0; });
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: data, backgroundColor: '#3b82f6', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { max: 100, ticks: { callback: function(v) { return v + '%'; } } } } }
+      });
+    }
+  } catch(e) { console.warn('Boss data load failed:', e.message); }
+}
+
+document.addEventListener('DOMContentLoaded', loadBossData);
+</script>
+</body>
+</html>

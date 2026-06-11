@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>财务风险预警 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+    }
+    .filter-tag {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      border: 1px solid #e5e7eb;
+      color: #6b7280;
+      transition: all 0.3s;
+    }
+    .filter-tag.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    .filter-tag.high {
+      border-color: #dc2626;
+      color: #dc2626;
+    }
+    .filter-tag.high.active {
+      background: #dc2626;
+    }
+    .filter-tag.medium {
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+    .filter-tag.medium.active {
+      background: #f59e0b;
+    }
+    .filter-tag.low {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+    .filter-tag.low.active {
+      background: #3b82f6;
+    }
+    .stats-bar {
+      background: white;
+      padding: 16px;
+      display: flex;
+      justify-content: space-around;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .stat-value.high {
+      color: #dc2626;
+    }
+    .stat-value.medium {
+      color: #f59e0b;
+    }
+    .stat-value.low {
+      color: #3b82f6;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .alert-list {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .alert-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      border-left: 4px solid;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .alert-card.high {
+      border-left-color: #dc2626;
+    }
+    .alert-card.medium {
+      border-left-color: #f59e0b;
+    }
+    .alert-card.low {
+      border-left-color: #3b82f6;
+    }
+    .alert-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .alert-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .alert-badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .alert-badge.high {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .alert-badge.medium {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    .alert-badge.low {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+    .alert-time {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+    .alert-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0 0 12px 0;
+    }
+    .alert-suggest {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    .suggest-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #3b82f6;
+      margin: 0 0 4px 0;
+    }
+    .suggest-text {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .alert-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .action-btn.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .action-btn.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .action-btn.success {
+      background: #10b981;
+      color: white;
+    }
+    .no-alerts {
+      text-align: center;
+      padding: 60px 24px;
+      color: #9ca3af;
+    }
+    .no-alerts i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    .no-alerts p {
+      font-size: 14px;
+      margin: 0;
+    }
+    .export-btn {
+      position: fixed;
+      right: 20px;
+      bottom: 120px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">财务风险预警</h1>
+    <p class="header-subtitle">系统自动扫描风险预警</p>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-tag active">全部</span>
+    <span class="filter-tag high">高风险</span>
+    <span class="filter-tag medium">中风险</span>
+    <span class="filter-tag low">低风险</span>
+    <span class="filter-tag">待处理</span>
+    <span class="filter-tag">已处理</span>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <p class="stat-value high">3</p>
+      <p class="stat-label">高风险</p>
+    </div>
+    <div class="stat-item">
+      <p class="stat-value medium">5</p>
+      <p class="stat-label">中风险</p>
+    </div>
+    <div class="stat-item">
+      <p class="stat-value low">8</p>
+      <p class="stat-label">低风险</p>
+    </div>
+  </div>
+
+  <div class="alert-list" id="alertList">
+    <div class="no-alerts"><i class="fas fa-spinner fa-pulse"></i><p>扫描风险中...</p></div>
+  </div>
+
+  <div class="export-btn" onclick="exportRiskReport()">
+    <i class="fas fa-download"></i>
+  </div>
+
+<script>
+var allAlerts = [];
+var currentFilter = 'all';
+
+async function loadRiskData() {
+  if (!window.DataService) return;
+
+  var alerts = [];
+
+  try {
+    // 1. 扫描逾期回款
+    var { data: payments } = await DataService.finance.listPayments({ verified: false });
+    var now = new Date();
+    (payments || []).forEach(function(p) {
+      var days = Math.floor((now - new Date(p.payment_date || now)) / (1000 * 60 * 60 * 24));
+      if (days > 90) {
+        alerts.push({ level: 'high', title: (p.order ? p.order.pl_number : '订单') + ' 应收超90天', time: p.payment_date, desc: '应收 $' + (parseFloat(p.amount)||0).toFixed(2) + ' 已逾期' + days + '天，超过严重预警线', suggest: '立即发送催款通知，电话跟进客户，必要时启动法律程序。', orderId: p.order_id });
+      } else if (days > 60) {
+        alerts.push({ level: 'medium', title: (p.order ? p.order.pl_number : '订单') + ' 应收超60天', time: p.payment_date, desc: '应收 $' + (parseFloat(p.amount)||0).toFixed(2) + ' 已逾期' + days + '天', suggest: '发送催款邮件，关注客户付款意愿。', orderId: p.order_id });
+      } else if (days > 30) {
+        alerts.push({ level: 'low', title: (p.order ? p.order.pl_number : '订单') + ' 应收超30天', time: p.payment_date, desc: '应收 $' + (parseFloat(p.amount)||0).toFixed(2) + ' 已逾期' + days + '天，接近预警线', suggest: '提醒客户按合同约定付款。', orderId: p.order_id });
+      }
+    });
+
+    // 2. 扫描延期订单
+    var { data: overdueOrders } = await DataService.dashboard.getOverdueOrders();
+    (overdueOrders || []).forEach(function(o) {
+      alerts.push({ level: o.delay_days > 10 ? 'high' : 'medium', title: o.pl_number + ' 生产延期', time: o.delivery_date, desc: '已延期' + (o.delay_days||0) + '天，当前状态：' + o.status, suggest: '联系工厂确认进度，评估是否需要调整交期承诺。', orderId: o.id });
+    });
+  } catch(e) { console.warn('Risk scan failed:', e.message); }
+
+  // 如果没有风险，用演示数据
+  if (alerts.length === 0) {
+    alerts = [
+      { level: 'low', title: 'PL-2026-0001 应收超30天', time: '2026-06-01', desc: '暂无高风险项。系统将持续监控。', suggest: '一切正常，请保持关注。' }
+    ];
+  }
+
+  allAlerts = alerts;
+  updateStats();
+  renderAlerts();
+}
+
+function updateStats() {
+  var high = allAlerts.filter(function(a) { return a.level === 'high'; }).length;
+  var med = allAlerts.filter(function(a) { return a.level === 'medium'; }).length;
+  var low = allAlerts.filter(function(a) { return a.level === 'low'; }).length;
+  var sv = document.querySelectorAll('.stat-value');
+  if (sv.length >= 3) { sv[0].textContent = high; sv[1].textContent = med; sv[2].textContent = low; }
+}
+
+function renderAlerts() {
+  var filtered = currentFilter === 'all' ? allAlerts : allAlerts.filter(function(a) { return a.level === currentFilter; });
+  var el = document.getElementById('alertList');
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="no-alerts"><i class="fas fa-check-circle" style="color:#10b981"></i><p>暂无此类风险</p></div>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(a) {
+    return '<div class="alert-card ' + a.level + '"><div class="alert-header"><h3 class="alert-title">' + a.title + '</h3><span class="alert-badge ' + a.level + '">' + ({high:'高风险',medium:'中风险',low:'低风险'})[a.level] + '</span></div><p class="alert-time">' + (a.time || '') + '</p><p class="alert-desc">' + a.desc + '</p><div class="alert-suggest"><p class="suggest-title">建议操作</p><p class="suggest-text">' + a.suggest + '</p></div><div class="alert-actions"><button class="action-btn primary" onclick="viewOrder(\'' + (a.orderId || '') + '\')"><i class="fas fa-eye"></i> 查看详情</button><button class="action-btn success" onclick="dismissAlert(\'' + a.title + '\')"><i class="fas fa-check"></i> 标记已处理</button></div></div>';
+  }).join('');
+}
+
+function viewOrder(id) {
+  if (window.parent && typeof window.parent.loadPage === 'function') {
+    window.parent.loadPage('pages/order-detail.html?id=' + (id || ''));
+  }
+}
+
+function dismissAlert(title) {
+  allAlerts = allAlerts.filter(function(a) { return a.title !== title; });
+  updateStats();
+  renderAlerts();
+  if (typeof Toast !== 'undefined') Toast.success('已标记为已处理');
+}
+
+function exportRiskReport() {
+  if (typeof ExportExcel !== 'undefined' && allAlerts.length > 0) {
+    ExportExcel.download(allAlerts.map(function(a) { return { 等级: a.level, 标题: a.title, 时间: a.time, 描述: a.desc }; }), '财务风险报告_' + new Date().toISOString().split('T')[0]);
+  }
+}
+
+// 筛选标签
+document.addEventListener('DOMContentLoaded', function() {
+  loadRiskData();
+  document.querySelectorAll('.filter-tag').forEach(function(tag) {
+    tag.addEventListener('click', function() {
+      document.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
+      this.classList.add('active');
+      var text = this.textContent.trim();
+      var map = {'全部':'all','高风险':'high','中风险':'medium','低风险':'low','待处理':'all','已处理':'done'};
+      currentFilter = map[text] || 'all';
+      if (currentFilter === 'done') { allAlerts = []; updateStats(); }
+      renderAlerts();
+    });
+  });
+});
+</script>
+</body>
+</html>

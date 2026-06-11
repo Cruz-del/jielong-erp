@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批量操作 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/supabase-storage.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/permission.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 24px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-secondary {
+      background: white;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+    }
+    .btn-success {
+      background: #22c55e;
+      color: white;
+    }
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+    }
+    .container {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+    }
+    .import-zone {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+    .import-zone:hover,
+    .import-zone.dragover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .import-icon {
+      font-size: 48px;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+    .import-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #374151;
+      margin: 0 0 8px 0;
+    }
+    .import-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .file-input {
+      display: none;
+    }
+    .import-type-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .import-type-tab {
+      padding: 8px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .import-type-tab.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .preview-table th,
+    .preview-table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 13px;
+    }
+    .preview-table th {
+      background: #f9fafb;
+      font-weight: 600;
+    }
+    .preview-table tr.error {
+      background: #fef2f2;
+    }
+    .preview-table tr.warning {
+      background: #fffbeb;
+    }
+    .error-cell {
+      color: #dc2626;
+    }
+    .warning-cell {
+      color: #d97706;
+    }
+    .import-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #f3f4f6;
+    }
+    .progress-bar {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #22c55e);
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+    .export-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .export-option {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .export-option:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    }
+    .export-icon {
+      font-size: 32px;
+      color: #3b82f6;
+      margin-bottom: 12px;
+    }
+    .export-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 6px 0;
+    }
+    .export-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .export-count {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #374151;
+      margin-top: 8px;
+    }
+    .batch-tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .batch-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      min-width: 200px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .batch-tag:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .batch-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .batch-icon.archive {
+      background: #f0fdf4;
+      color: #22c55e;
+    }
+    .batch-icon.remind {
+      background: #fffbeb;
+      color: #f59e0b;
+    }
+    .batch-icon.status {
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+    .batch-info {
+      flex: 1;
+    }
+    .batch-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0 0 4px 0;
+    }
+    .batch-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .sample-file-link {
+      color: #3b82f6;
+      text-decoration: underline;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .sample-file-link:hover {
+      color: #2563eb;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f3f4f6;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #f3f4f6;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+    .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 100px;
+      resize: vertical;
+    }
+    .result-summary {
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    .result-summary.success {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+    }
+    .result-summary.warning {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+    }
+    .result-summary.error {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+    }
+    .result-title {
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    .result-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: #9ca3af;
+    }
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    .empty-state p {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="header-title">批量操作</h1>
+      <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin: 4px 0 0 0;">支持批量导入、导出和标记操作</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 批量导入 -->
+    <div class="card">
+      <h2 class="section-title">
+        <i class="fas fa-upload"></i> 批量导入
+      </h2>
+      
+      <div class="import-type-tabs">
+        <button class="import-type-tab active" onclick="selectImportType('pattern')">花型库</button>
+        <button class="import-type-tab" onclick="selectImportType('factory')">工厂档案</button>
+        <button class="import-type-tab" onclick="selectImportType('customer')">客户信息</button>
+        <button class="import-type-tab" onclick="selectImportType('order')">历史订单</button>
+      </div>
+
+      <div class="import-zone" id="importZone" onclick="document.getElementById('fileInput').click()">
+        <div class="import-icon">
+          <i class="fas fa-file-excel"></i>
+        </div>
+        <h3 class="import-title">点击或拖拽文件到此处上传</h3>
+        <p class="import-desc">
+          支持 .xlsx, .xls, .csv 格式文件，文件大小不超过 10MB
+          <span class="sample-file-link" onclick="event.stopPropagation(); downloadSampleFile()">
+            下载模板文件
+          </span>
+        </p>
+      </div>
+      
+      <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv">
+      
+      <div id="previewSection" style="display: none;">
+        <h3 style="font-size: 14px; font-weight: 600; margin-top: 20px;">文件预览</h3>
+        <div class="table-container" style="overflow-x: auto;">
+          <table class="preview-table" id="previewTable">
+            <!-- 预览内容将通过JS渲染 -->
+          </table>
+        </div>
+        
+        <div class="import-actions">
+          <button class="btn btn-secondary" onclick="cancelImport()">取消</button>
+          <button class="btn btn-primary" onclick="startImport()">开始导入</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 批量导出 -->
+    <div class="card">
+      <h2 class="section-title">
+        <i class="fas fa-download"></i> 批量导出
+      </h2>
+      
+      <div class="export-options">
+        <div class="export-option" onclick="exportData('orders')">
+          <div class="export-icon"><i class="fas fa-file-text"></i></div>
+          <h3 class="export-title">跟单列表</h3>
+          <p class="export-desc">导出所有订单信息，包含订单号、客户、金额等</p>
+          <span class="export-count">156条记录</span>
+        </div>
+        
+        <div class="export-option" onclick="exportData('receivables')">
+          <div class="export-icon"><i class="fas fa-credit-card"></i></div>
+          <h3 class="export-title">应收账款明细</h3>
+          <p class="export-desc">导出应收账款详情，支持多币种显示</p>
+          <span class="export-count">89条记录</span>
+        </div>
+        
+        <div class="export-option" onclick="exportData('profit')">
+          <div class="export-icon"><i class="fas fa-chart-line"></i></div>
+          <h3 class="export-title">利润分析</h3>
+          <p class="export-desc">导出利润报表，包含成本、毛利、利润率</p>
+          <span class="export-count">12个月</span>
+        </div>
+        
+        <div class="export-option" onclick="exportData('customers')">
+          <div class="export-icon"><i class="fas fa-users"></i></div>
+          <h3 class="export-title">客户信息</h3>
+          <p class="export-desc">导出客户档案，包含联系方式和交易记录</p>
+          <span class="export-count">45家客户</span>
+        </div>
+        
+        <div class="export-option" onclick="exportData('factories')">
+          <div class="export-icon"><i class="fas fa-industry"></i></div>
+          <h3 class="export-title">工厂档案</h3>
+          <p class="export-desc">导出合作工厂信息，包含产能和评级</p>
+          <span class="export-count">12家工厂</span>
+        </div>
+        
+        <div class="export-option" onclick="exportData('tasks')">
+          <div class="export-icon"><i class="fas fa-tasks"></i></div>
+          <h3 class="export-title">任务清单</h3>
+          <p class="export-desc">导出待办任务列表，支持状态筛选</p>
+          <span class="export-count">23项任务</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 批量标记 -->
+    <div class="card">
+      <h2 class="section-title">
+        <i class="fas fa-tags"></i> 批量标记
+      </h2>
+      
+      <div class="batch-tag-list">
+        <div class="batch-tag" onclick="showBatchArchiveModal()">
+          <div class="batch-icon archive">
+            <i class="fas fa-archive"></i>
+          </div>
+          <div class="batch-info">
+            <h3 class="batch-title">批量归档订单</h3>
+            <p class="batch-desc">将已完成订单归档到历史记录</p>
+          </div>
+          <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
+        </div>
+        
+        <div class="batch-tag" onclick="showBatchRemindModal()">
+          <div class="batch-icon remind">
+            <i class="fas fa-bell"></i>
+          </div>
+          <div class="batch-info">
+            <h3 class="batch-title">批量发送催款消息</h3>
+            <p class="batch-desc">向逾期客户发送催款通知</p>
+          </div>
+          <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
+        </div>
+        
+        <div class="batch-tag" onclick="showBatchStatusModal()">
+          <div class="batch-icon status">
+            <i class="fas fa-toggle-on"></i>
+          </div>
+          <div class="batch-info">
+            <h3 class="batch-title">批量更新状态</h3>
+            <p class="batch-desc">统一更新订单状态或优先级</p>
+          </div>
+          <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量归档弹窗 -->
+  <div class="modal-overlay" id="archiveModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">批量归档订单</h3>
+        <div class="modal-close" onclick="closeArchiveModal()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div>
+        <p style="color: #6b7280; margin-bottom: 16px;">选择要归档的订单状态：</p>
+        <div style="display: flex; flex-wrap: gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; margin-right: 16px;">
+            <input type="checkbox" checked> 已完成
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; margin-right: 16px;">
+            <input type="checkbox"> 已取消
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox"> 已回款
+          </label>
+        </div>
+        <div class="result-summary warning" style="margin-top: 16px;">
+          <p class="result-title">预计归档数量</p>
+          <p class="result-desc">根据筛选条件，预计将归档 <strong>45</strong> 条订单记录</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeArchiveModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmArchive()">确认归档</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量催款弹窗 -->
+  <div class="modal-overlay" id="remindModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">批量发送催款消息</h3>
+        <div class="modal-close" onclick="closeRemindModal()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">逾期天数</label>
+          <select class="form-select">
+            <option value="7">超过7天</option>
+            <option value="15">超过15天</option>
+            <option value="30">超过30天</option>
+            <option value="60">超过60天</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">消息模板</label>
+          <textarea class="form-textarea" placeholder="尊敬的客户，您有一笔款项已逾期，请尽快安排支付。"></textarea>
+        </div>
+        <div class="result-summary warning" style="margin-top: 16px;">
+          <p class="result-title">预计发送数量</p>
+          <p class="result-desc">根据筛选条件，预计将向 <strong>12</strong> 位客户发送催款通知</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeRemindModal()">取消</button>
+        <button class="btn btn-warning" onclick="confirmRemind()">发送催款</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量更新状态弹窗 -->
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">批量更新状态</h3>
+        <div class="modal-close" onclick="closeStatusModal()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div>
+        <div class="form-group">
+          <label class="form-label">选择订单状态</label>
+          <select class="form-select">
+            <option value="">请选择状态</option>
+            <option value="pending">待确认</option>
+            <option value="confirmed">已确认</option>
+            <option value="production">生产中</option>
+            <option value="completed">已完成</option>
+            <option value="cancelled">已取消</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">选择订单（可多选）</label>
+          <select class="form-select" multiple style="height: 150px;">
+            <option value="PL-2026-0001">PL-2026-0001 - ABC Trading</option>
+            <option value="PL-2026-0002">PL-2026-0002 - Euro Textile</option>
+            <option value="PL-2026-0003">PL-2026-0003 - USA Apparel</option>
+            <option value="PL-2026-0004">PL-2026-0004 - Asia Fashion</option>
+            <option value="PL-2026-0005">PL-2026-0005 - Global Textile</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeStatusModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmStatusUpdate()">确认更新</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入结果弹窗 -->
+  <div class="modal-overlay" id="importResultModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">导入结果</h3>
+        <div class="modal-close" onclick="closeImportResultModal()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div id="importResultContent">
+        <!-- 结果内容将通过JS渲染 -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeImportResultModal()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 当前导入类型
+    let currentImportType = 'pattern';
+    
+    // 导入类型配置
+    const importTypes = {
+      pattern: { name: '花型库', columns: ['花型编号', '花型名称', '花型类型', '颜色', '幅宽', '克重', '单价'] },
+      factory: { name: '工厂档案', columns: ['工厂编号', '工厂名称', '联系人', '电话', '地址', '产能', '评级'] },
+      customer: { name: '客户信息', columns: ['客户编号', '客户名称', '联系人', '电话', '邮箱', '地址', '币种'] },
+      order: { name: '历史订单', columns: ['订单编号', '客户名称', '货号', '数量', '单价', '金额', '交期'] }
+    };
+
+    // 选择导入类型
+    function selectImportType(type) {
+      currentImportType = type;
+      document.querySelectorAll('.import-type-tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelector(`[onclick="selectImportType('${type}')"]`).classList.add('active');
+    }
+
+    // 下载模板文件
+    function downloadSampleFile() {
+      const config = importTypes[currentImportType];
+      const headers = config.columns.join(',');
+      
+      const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${config.name}_导入模板.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      Toast.success('模板文件已下载');
+    }
+
+    // 处理文件上传
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    });
+
+    // 处理文件拖拽
+    const importZone = document.getElementById('importZone');
+    importZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      importZone.classList.add('dragover');
+    });
+    importZone.addEventListener('dragleave', function() {
+      importZone.classList.remove('dragover');
+    });
+    importZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      importZone.classList.remove('dragover');
+      
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    });
+
+    // 处理文件
+    function handleFileUpload(file) {
+      // 检查文件类型
+      const validExtensions = ['.xlsx', '.xls', '.csv'];
+      const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      
+      if (!validExtensions.includes(extension)) {
+        Toast.error('不支持的文件格式，请上传 Excel 或 CSV 文件');
+        return;
+      }
+      
+      // 检查文件大小
+      if (file.size > 10 * 1024 * 1024) {
+        Toast.error('文件大小超过限制（最大10MB）');
+        return;
+      }
+      
+      // 显示预览
+      showFilePreview(file);
+    }
+
+    // 显示文件预览
+    function showFilePreview(file) {
+      // 模拟解析文件（实际项目中使用 xlsx 库）
+      const previewSection = document.getElementById('previewSection');
+      previewSection.style.display = 'block';
+      
+      // 生成模拟数据
+      const config = importTypes[currentImportType];
+      const rows = generateMockRows(config.columns);
+      
+      const table = document.getElementById('previewTable');
+      table.innerHTML = `
+        <thead>
+          <tr>${config.columns.map(col => `<th>${col}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${rows.map((row, index) => `
+            <tr class="${row.type}">
+              ${row.data.map((cell, cellIndex) => `
+                <td ${row.errors && row.errors.includes(cellIndex) ? 'class="error-cell"' : ''}>
+                  ${cell}
+                </td>
+              `).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+      
+      Toast.info(`文件解析成功，共 ${rows.length} 条记录`);
+    }
+
+    // 生成模拟数据
+    function generateMockRows(columns) {
+      return [
+        { data: ['HX-001', '花卉系列-A', '印花', '红色', '150cm', '150g', '$2.50'], type: '' },
+        { data: ['HX-002', '几何图案', '提花', '蓝色', '140cm', '160g', '$3.20'], type: '' },
+        { data: ['HX-003', '抽象艺术', '染色', '', '150cm', '140g', '$1.80'], type: 'warning', errors: [3] },
+        { data: ['HX-004', '', '印花', '黄色', '150cm', '150g', '-'], type: 'error', errors: [1, 6] },
+        { data: ['HX-005', '条纹系列', '印花', '绿色', '145cm', '145g', '$2.10'], type: '' },
+        { data: ['HX-006', '格子图案', '提花', '黑色', '150cm', '165g', '$3.50'], type: '' }
+      ];
+    }
+
+    // 取消导入
+    function cancelImport() {
+      document.getElementById('previewSection').style.display = 'none';
+      document.getElementById('fileInput').value = '';
+    }
+
+    // 开始导入
+    function startImport() {
+      // 显示进度
+      Loading.show('正在导入数据...');
+      
+      setTimeout(() => {
+        Loading.hide();
+        
+        // 显示结果
+        document.getElementById('importResultContent').innerHTML = `
+          <div class="result-summary success">
+            <p class="result-title" style="color: #16a34a;">导入成功</p>
+            <p class="result-desc">
+              成功导入 <strong>4</strong> 条记录<br>
+              跳过 <strong>2</strong> 条错误记录
+            </p>
+          </div>
+          <p style="font-size: 13px; color: #6b7280; margin-top: 16px;">
+            错误记录已保存到错误日志，可在数据管理中查看详情
+          </p>
+        `;
+        document.getElementById('importResultModal').classList.add('active');
+        
+        // 记录日志
+        AuditLog.add(AuditLog.LOG_TYPES.IMPORT, `导入${importTypes[currentImportType].name}数据`);
+      }, 2000);
+    }
+
+    // 导出数据
+    function exportData(type) {
+      const exportConfig = {
+        orders: { name: '跟单列表', filename: 'orders', columns: ['订单编号', '客户名称', '货号', '数量', '金额', '状态', '交期'] },
+        receivables: { name: '应收账款明细', filename: 'receivables', columns: ['订单编号', '客户', '金额', '币种', '账龄', '状态'] },
+        profit: { name: '利润分析', filename: 'profit', columns: ['月份', '销售额', '成本', '毛利', '毛利率'] },
+        customers: { name: '客户信息', filename: 'customers', columns: ['客户编号', '客户名称', '联系人', '电话', '邮箱'] },
+        factories: { name: '工厂档案', filename: 'factories', columns: ['工厂编号', '工厂名称', '联系人', '电话', '产能'] },
+        tasks: { name: '任务清单', filename: 'tasks', columns: ['任务编号', '标题', '订单', '状态', '优先级'] }
+      };
+      
+      const config = exportConfig[type];
+      
+      // 检查权限
+      if (type === 'profit' && !PermissionSystem.hasPermission('view_profit_report')) {
+        Toast.error('您没有权限导出利润分析数据');
+        return;
+      }
+      
+      ConfirmModal.show({
+        title: `导出${config.name}`,
+        message: `确定要导出${config.name}吗？导出后可在本地查看和分析。`,
+        confirmText: '确认导出',
+        cancelText: '取消',
+        onConfirm: () => {
+          // 生成CSV
+          const headers = config.columns.join(',');
+          const rows = generateMockExportData(config.columns);
+          const csv = [headers, ...rows].join('\n');
+          
+          const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          
+          link.setAttribute('href', url);
+          link.setAttribute('download', `${config.filename}_${new Date().toISOString().split('T')[0]}.csv`);
+          link.style.visibility = 'hidden';
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // 记录日志
+          AuditLog.add(AuditLog.LOG_TYPES.EXPORT, `导出${config.name}`);
+          
+          Toast.success(`${config.name}导出成功`);
+        }
+      });
+    }
+
+    // 生成模拟导出数据
+    function generateMockExportData(columns) {
+      const data = [];
+      for (let i = 0; i < 10; i++) {
+        const row = columns.map(col => {
+          if (col.includes('编号')) return `XX-${String(i + 1).padStart(4, '0')}`;
+          if (col.includes('名称')) return ['ABC Trading', 'Euro Textile', 'USA Apparel', 'Asia Fashion'][i % 4];
+          if (col.includes('金额')) return `$${(Math.random() * 50000).toFixed(0)}`;
+          if (col.includes('状态')) return ['已完成', '生产中', '待确认'][i % 3];
+          if (col.includes('数量')) return Math.floor(Math.random() * 10000);
+          if (col.includes('联系人')) return ['张先生', '李女士', '王经理'][i % 3];
+          if (col.includes('电话')) return `1380013800${i}`;
+          if (col.includes('交期')) return `2026-0${i % 12 + 1}-${i % 28 + 1}`;
+          return `数据${i + 1}`;
+        });
+        data.push(row.join(','));
+      }
+      return data;
+    }
+
+    // 显示批量归档弹窗
+    function showBatchArchiveModal() {
+      document.getElementById('archiveModal').classList.add('active');
+    }
+
+    // 关闭批量归档弹窗
+    function closeArchiveModal() {
+      document.getElementById('archiveModal').classList.remove('active');
+    }
+
+    // 确认归档
+    function confirmArchive() {
+      closeArchiveModal();
+      
+      Loading.show('正在归档...');
+      setTimeout(() => {
+        Loading.hide();
+        AuditLog.add(AuditLog.LOG_TYPES.UPDATE, '批量归档订单');
+        Toast.success('批量归档成功，共归档45条订单');
+      }, 1500);
+    }
+
+    // 显示批量催款弹窗
+    function showBatchRemindModal() {
+      document.getElementById('remindModal').classList.add('active');
+    }
+
+    // 关闭批量催款弹窗
+    function closeRemindModal() {
+      document.getElementById('remindModal').classList.remove('active');
+    }
+
+    // 确认发送催款
+    function confirmRemind() {
+      closeRemindModal();
+      
+      Loading.show('正在发送消息...');
+      setTimeout(() => {
+        Loading.hide();
+        AuditLog.add(AuditLog.LOG_TYPES.CREATE, '批量发送催款消息');
+        Toast.success('催款消息已发送，共发送12条');
+      }, 2000);
+    }
+
+    // 显示批量更新状态弹窗
+    function showBatchStatusModal() {
+      document.getElementById('statusModal').classList.add('active');
+    }
+
+    // 关闭批量更新状态弹窗
+    function closeStatusModal() {
+      document.getElementById('statusModal').classList.remove('active');
+    }
+
+    // 确认更新状态
+    function confirmStatusUpdate() {
+      closeStatusModal();
+      
+      Loading.show('正在更新状态...');
+      setTimeout(() => {
+        Loading.hide();
+        AuditLog.add(AuditLog.LOG_TYPES.UPDATE, '批量更新订单状态');
+        Toast.success('订单状态更新成功');
+      }, 1500);
+    }
+
+    // 关闭导入结果弹窗
+    function closeImportResultModal() {
+      document.getElementById('importResultModal').classList.remove('active');
+      cancelImport();
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化Toast
+      Toast.init();
+      
+      // 初始化权限系统
+      PermissionSystem.init();
+    });
+  </script>
+</body>
+</html>

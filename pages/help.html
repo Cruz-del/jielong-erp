@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>帮助中心 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .back-btn {
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .back-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .search-box {
+      margin: 16px;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 40px 12px 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 14px;
+      background: white;
+    }
+    .search-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+    }
+    .content {
+      padding: 0 16px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+    .help-list {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .help-item {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .help-item:last-child {
+      border-bottom: none;
+    }
+    .help-item:hover {
+      background: #f9fafb;
+    }
+    .help-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+      margin-right: 12px;
+    }
+    .help-icon.order {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+    .help-icon.finance {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+    .help-icon.system {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .help-content {
+      flex: 1;
+    }
+    .help-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1f2937;
+    }
+    .help-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    .help-arrow {
+      color: #9ca3af;
+      font-size: 14px;
+    }
+    .contact-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .contact-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 8px;
+    }
+    .contact-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+    .contact-btn {
+      padding: 12px 32px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 16px;
+      cursor: pointer;
+      color: #6b7280;
+      transition: color 0.2s;
+    }
+    .nav-item.active {
+      color: #3b82f6;
+    }
+    .nav-item i {
+      font-size: 20px;
+    }
+    .nav-item span {
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="back-btn" onclick="goBack()">
+      <i class="fas fa-chevron-left"></i>
+    </div>
+    <h1>帮助中心</h1>
+  </div>
+
+  <div class="search-box">
+    <input type="text" class="search-input" placeholder="搜索帮助文档...">
+    <i class="fas fa-search search-icon"></i>
+  </div>
+
+  <div class="content">
+    <div class="section-title">热门问题</div>
+    <div class="help-list">
+      <div class="help-item">
+        <div class="help-icon order">
+          <i class="fas fa-file-text"></i>
+        </div>
+        <div class="help-content">
+          <div class="help-title">如何创建订单</div>
+          <div class="help-desc">从询价到下单的完整流程</div>
+        </div>
+        <i class="fas fa-chevron-right help-arrow"></i>
+      </div>
+      <div class="help-item">
+        <div class="help-icon finance">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="help-content">
+          <div class="help-title">如何核销回款</div>
+          <div class="help-desc">财务核销操作指南</div>
+        </div>
+        <i class="fas fa-chevron-right help-arrow"></i>
+      </div>
+      <div class="help-item">
+        <div class="help-icon system">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <div class="help-content">
+          <div class="help-title">如何修改密码</div>
+          <div class="help-desc">账户安全设置</div>
+        </div>
+        <i class="fas fa-chevron-right help-arrow"></i>
+      </div>
+    </div>
+
+    <div class="section-title">使用指南</div>
+    <div class="help-list">
+      <div class="help-item">
+        <div class="help-icon order">
+          <i class="fas fa-list"></i>
+        </div>
+        <div class="help-content">
+          <div class="help-title">订单管理</div>
+          <div class="help-desc">订单创建、跟踪、修改流程</div>
+        </div>
+        <i class="fas fa-chevron-right help-arrow"></i>
+      </div>
+      <div class="help-item">
+        <div class="help-icon finance">
+          <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="help-content">
+          <div class="help-title">财务管理</div>
+          <div class="help-desc">应收、应付、利润分析</div>
+        </div>
+        <i class="fas fa-chevron-right help-arrow"></i>
+      </div>
+      <div class="help-item">
+        <div class="help-icon system">
+          <i class="fas fa-cog"></i>
+        </div>
+        <div class="help-content">
+          <div class="help-title">系统设置</div>
+          <div class="help-desc">个性化配置说明</div>
+        </div>
+        <i class="fas fa-chevron-right help-arrow"></i>
+      </div>
+    </div>
+
+    <div class="contact-section">
+      <div class="contact-title">需要帮助？</div>
+      <div class="contact-desc">如有其他问题，请联系我们的技术支持团队</div>
+      <button class="contact-btn">联系客服</button>
+    </div>
+  </div>
+
+  <!-- 底部导航由外壳统一提供 -->
+  <script>
+    function goBack() {
+      window.history.back();
+    }
+    function navigateTo(page) {
+      window.location.href = page;
+    }
+  </script>
+</body>
+</html>

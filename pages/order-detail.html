@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>订单详情 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/supabase-storage.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/permissions.js"></script>
+  <script src="../js/file-viewer.js"></script>
+  <style>
+    :root{--bg:#eef0f4;--card:#fff;--text:#1e293b;--text2:#64748b;--border:#e8ecf1;--accent:#2563eb;--danger:#ef4444;--success:#10b981;--warn:#f59e0b;--shadow:0 1px 2px rgba(0,0,0,.03),0 2px 8px rgba(0,0,0,.04)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);min-height:100vh;padding-bottom:80px;-webkit-font-smoothing:antialiased}
+
+    /* Header */
+    .header{background:linear-gradient(155deg,#0f2744,#1b3d62 40%,#1e4d7b);padding:16px;color:white;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
+    .header::after{content:'';position:absolute;top:-40px;right:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 70%);border-radius:50%}
+    .back-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;position:relative;z-index:1;border:none;color:white}
+    .header-info{flex:1;position:relative;z-index:1}
+    .header-title{font-size:17px;font-weight:700;margin:0}
+    .header-subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px}
+
+    /* 10-Node Workflow Stepper */
+    .workflow-strip{background:var(--card);padding:14px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:var(--shadow)}
+    .workflow-strip::-webkit-scrollbar{display:none}
+    .workflow-track{display:flex;gap:0;min-width:max-content;padding:0 8px;align-items:flex-start}
+    .wf-node{display:flex;flex-direction:column;align-items:center;min-width:62px;cursor:pointer;position:relative;padding:0 4px}
+    .wf-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;z-index:1;transition:all .3s;border:2px solid #dde1e7;background:#fff;color:#94a3b8}
+    .wf-node.done .wf-dot{background:var(--success);border-color:var(--success);color:#fff}
+    .wf-node.active .wf-dot{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.15);animation:pulse-dot 2s infinite}
+    .wf-node.alert .wf-dot{background:var(--danger);border-color:var(--danger);color:#fff;animation:blink .8s infinite}
+    @keyframes pulse-dot{0%,100%{box-shadow:0 0 0 4px rgba(37,99,235,.15)}50%{box-shadow:0 0 0 10px rgba(37,99,235,.05)}}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+    .wf-label{font-size:10px;color:var(--text2);margin-top:5px;text-align:center;white-space:nowrap;font-weight:500}
+    .wf-node.active .wf-label{color:var(--accent);font-weight:700}
+    .wf-node.done .wf-label{color:var(--success)}
+    .wf-line{position:absolute;top:16px;left:50%;width:100%;height:2px;background:#e8ecf1;z-index:0}
+    .wf-node:last-child .wf-line{display:none}
+    .wf-node.done .wf-line{background:var(--success)}
+
+    /* Summary Card */
+    .summary-card{background:var(--card);margin:12px 14px;border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+    .summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+    .summary-row:last-child{border-bottom:none}
+    .s-label{color:var(--text2)}
+    .s-value{color:var(--text);font-weight:600}
+    .s-value.danger{color:var(--danger)}
+    .s-value.success{color:var(--success)}
+
+    /* Action Section */
+    .action-section{background:var(--card);margin:0 14px 12px;border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+    .action-title{font-size:15px;font-weight:700;color:var(--text);margin:0 0 14px 0;display:flex;align-items:center;gap:8px}
+    .action-desc{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6}
+    .btn-row{display:flex;gap:10px}
+    .btn{padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;gap:6px;transition:all .2s}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.2);flex:1;justify-content:center}
+    .btn-success{background:var(--success);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.2);flex:1;justify-content:center}
+    .btn-warn{background:var(--warn);color:#fff;flex:1;justify-content:center}
+    .btn-outline{background:#fff;color:var(--danger);border:1.5px solid #fecaca;flex:1;justify-content:center}
+
+    /* File Upload */
+    .upload-area{border:2px dashed #dde1e7;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-top:12px}
+    .upload-area:hover{border-color:var(--accent);background:#f8fafc}
+    .upload-icon{width:44px;height:44px;background:#eff4ff;border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--accent);font-size:20px}
+    .upload-text{font-size:13px;color:var(--text2)}
+    .file-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .file-item{display:flex;align-items:center;gap:10px;padding:10px;background:#f8fafc;border-radius:10px}
+    .file-icon{width:34px;height:34px;border-radius:8px;background:#eff4ff;display:flex;align-items:center;justify-content:center;color:var(--accent)}
+    .file-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+    .file-size{font-size:11px;color:var(--text2)}
+
+    /* Side Panel */
+    .side-panel{position:fixed;right:-100%;top:0;bottom:0;width:85%;background:#fff;z-index:1000;transition:right .3s;display:flex;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.1)}
+    .side-panel.active{right:0}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;display:none}
+    .overlay.active{display:block}
+    .side-header{padding:16px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+    .side-title{font-size:16px;font-weight:700;color:var(--text)}
+    .side-close{width:32px;height:32px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none}
+    .side-content{flex:1;padding:16px;overflow-y:auto}
+  </style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidePanel()"></div>
+
+<!-- Header -->
+<div class="header">
+  <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+  <div class="header-info">
+    <h1 class="header-title" id="orderPL">PL-2026-0001</h1>
+    <p class="header-subtitle" id="orderCustomer">加载中...</p>
+  </div>
+  <button class="back-btn" onclick="openSidePanel()" style="font-size:16px"><i class="fas fa-paperclip"></i></button>
+</div>
+
+<!-- 10-Node Workflow -->
+<div class="workflow-strip">
+  <div class="workflow-track" id="workflowTrack">
+    <!-- JS填充 -->
+  </div>
+</div>
+
+<!-- Order Summary -->
+<div class="summary-card" id="summaryCard">
+  <div class="summary-row"><span class="s-label">花型</span><span class="s-value" id="sPattern">—</span></div>
+  <div class="summary-row"><span class="s-label">数量</span><span class="s-value" id="sQuantity">—</span></div>
+  <div class="summary-row"><span class="s-label">工厂</span><span class="s-value" id="sFactory">—</span></div>
+  <div class="summary-row"><span class="s-label">交期</span><span class="s-value" id="sDelivery">—</span></div>
+  <div class="summary-row"><span class="s-label">当前节点</span><span class="s-value" id="sCurrentNode" style="color:var(--accent)">—</span></div>
+</div>
+
+<!-- Current Node Action -->
+<div class="action-section" id="actionSection">
+  <h3 class="action-title" id="actionTitle">📋 当前任务</h3>
+  <p class="action-desc" id="actionDesc">请完成当前节点的操作</p>
+  <div class="btn-row" id="actionButtons">
+    <button class="btn btn-primary" onclick="completeNode()"><i class="fas fa-check"></i> 完成本节点</button>
+    <button class="btn btn-outline" onclick="reportIssue()"><i class="fas fa-exclamation-triangle"></i> 上报异常</button>
+  </div>
+  <!-- File Upload Area -->
+  <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+    <p class="upload-text">点击上传文件（设计稿/检验报告/装箱单等）</p>
+    <input type="file" id="fileInput" multiple accept="image/*,.pdf" style="display:none" onchange="handleFileUpload(this.files)">
+  </div>
+  <div class="file-list" id="fileList"></div>
+</div>
+
+<!-- Side Panel (附件树) -->
+<div class="side-panel" id="sidePanel">
+  <div class="side-header">
+    <span class="side-title">📎 附件管理</span>
+    <button class="side-close" onclick="closeSidePanel()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="side-content" id="sideContent">
+    <p style="color:var(--text2);font-size:13px;">各节点文件将在此汇总</p>
+  </div>
+</div>
+
+<script>
+// ===== 10-Node Workflow Definition =====
+const WORKFLOW = [
+  { id:'01', name:'客户询价', icon:'fa-comments', phase:'商务' },
+  { id:'02', name:'计划单',   icon:'fa-file-plus', phase:'商务' },
+  { id:'03', name:'设计确认', icon:'fa-palette', phase:'商务' },
+  { id:'04', name:'工厂生产', icon:'fa-industry', phase:'生产' },
+  { id:'05', name:'QC检验',   icon:'fa-search', phase:'质检' },
+  { id:'06', name:'装箱',     icon:'fa-box', phase:'物流' },
+  { id:'07', name:'出货',     icon:'fa-ship', phase:'物流' },
+  { id:'08', name:'单据',     icon:'fa-file-alt', phase:'单证' },
+  { id:'09', name:'回款',     icon:'fa-coins', phase:'财务' },
+  { id:'10', name:'归档',     icon:'fa-archive', phase:'完成' }
+];
+
+let orderId = new URLSearchParams(location.search).get('id') || (typeof AppState!=='undefined'?AppState.get('currentOrder'):null) || 'PL-2026-0001';
+let currentOrder = null;
+
+// ===== Render Workflow =====
+function renderWorkflow(activeNodeId) {
+  const track = document.getElementById('workflowTrack');
+  track.innerHTML = WORKFLOW.map((n, i) => {
+    let cls = '';
+    if (activeNodeId && parseInt(n.id) < parseInt(activeNodeId)) cls = 'done';
+    else if (n.id === activeNodeId) cls = 'active';
+    // 如果延期且在当前节点，显示警告
+    if (currentOrder && currentOrder.is_delayed && n.id === activeNodeId) cls += ' alert';
+    return `<div class="wf-node ${cls}" onclick="jumpToNode('${n.id}')">
+      <div class="wf-line"></div>
+      <div class="wf-dot">${cls==='done'?'<i class="fas fa-check"></i>':n.id}</div>
+      <span class="wf-label">${n.name}</span>
+    </div>`;
+  }).join('');
+  // 滚动到当前节点
+  setTimeout(() => {
+    const active = track.querySelector('.active');
+    if (active) active.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+  }, 200);
+}
+
+// ===== Load Order Data =====
+async function loadOrder() {
+  // 1. Try Supabase first
+  try {
+    if (window.DataService && orderId && orderId !== 'undefined') {
+      const { data } = await DataService.orders.getById(orderId);
+      if (data) {
+        currentOrder = data;
+        fillOrderData(data);
+        applyWorkflow(data);
+        return;
+      }
+    }
+  } catch(e) { console.warn('Supabase加载失败:', e.message); }
+
+  // 2. Fallback: localStorage
+  try {
+    const localOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+    const local = localOrders.find(o => o.id === orderId || o.pl_number === orderId);
+    if (local) {
+      currentOrder = local;
+      fillOrderData(local);
+      applyWorkflow(local);
+      console.log('从本地存储加载订单:', local.pl_number);
+      return;
+    }
+  } catch(e) { console.warn('本地加载失败:', e.message); }
+
+  // 3. Last resort: build minimal order from URL id
+  if (orderId && orderId !== 'undefined') {
+    currentOrder = {
+      id: orderId, pl_number: orderId.startsWith('PL-') ? orderId : 'PL-2026-0001',
+      customer_name: '待同步', design_pattern: '—', quantity: 0, unit: 'm',
+      factory_name: '—', delivery_date: '—', status: '设计', progress: 0
+    };
+    fillOrderData(currentOrder);
+    applyWorkflow(currentOrder);
+    Toast.warning('订单数据从本地缓存加载，部分功能受限');
+    return;
+  }
+
+  // 4. Nothing found
+  renderWorkflow('02');
+  updateActionSection('02', null);
+  Toast.error('订单数据未找到');
+}
+
+function applyWorkflow(order) {
+  const nodeMap = {'设计':'03','打样':'03','采购':'04','生产':'04','装箱':'06','QC':'05','出货':'07','已完成':'10','已取消':'10'};
+  const activeNode = nodeMap[order.status] || '02';
+  renderWorkflow(activeNode);
+  updateActionSection(activeNode, order);
+}
+
+function fillOrderData(order) {
+  document.getElementById('orderPL').textContent = order.pl_number || '—';
+  document.getElementById('orderCustomer').textContent = order.customer_name || '—';
+  document.getElementById('sPattern').textContent = order.design_pattern || '—';
+  document.getElementById('sQuantity').textContent = (order.quantity||0) + ' ' + (order.unit||'m');
+  document.getElementById('sFactory').textContent = order.factory_name || '—';
+  document.getElementById('sDelivery').textContent = order.delivery_date || '—';
+  const node = WORKFLOW.find(n => {
+    const m = {'设计':'03','打样':'03','采购':'04','生产':'04','装箱':'06','QC':'05','出货':'07','已完成':'10'};
+    return n.id === (m[order.status]||'02');
+  });
+  document.getElementById('sCurrentNode').textContent = node ? `[${node.id}] ${node.name}` : order.status;
+}
+
+// ===== Node Action Logic =====
+function updateActionSection(activeNodeId, order) {
+  const actions = {
+    '01': { title:'📋 客户询价', desc:'AI已自动填单。请确认客户需求：花型、数量、目标单价。', btn:'确认询价 → 生成计划单', btnClass:'btn-primary' },
+    '02': { title:'📋 计划单', desc:'系统已生成 PL 编号。确认订单主数据无误后进入设计阶段。', btn:'确认计划单 → 进入设计', btnClass:'btn-primary' },
+    '03': { title:'🎨 设计确认', desc:'上传设计稿和唛头文件，生成分享链接发送客户确认。', btn:'客户确认 → 进入生产', btnClass:'btn-primary' },
+    '04': { title:'🏭 工厂生产', desc:'计划单已同步至工厂。跟踪每日生产日报和进度。', btn:'生产完成 → 触发QC', btnClass:'btn-success' },
+    '05': { title:'🔍 QC检验', desc:'AI视觉自动识别检验外观、尺寸、数量。上传检验报告。', btn:'检验合格 → 进入装箱', btnClass:'btn-success' },
+    '06': { title:'📦 装箱', desc:'系统自动计算装箱量，生成最优混装方案和标准装箱单。', btn:'装柜完成 → 进入出货', btnClass:'btn-primary' },
+    '07': { title:'🚢 出货', desc:'录入柜号、提单号，自动提交报关申请。', btn:'报关放行 → 生成单据', btnClass:'btn-primary' },
+    '08': { title:'📄 单据', desc:'自动生成全套外贸单据（Invoice/Packing List/CO）。', btn:'单据生成 → 进入回款', btnClass:'btn-success' },
+    '09': { title:'💰 回款', desc:'客户上传付款水单。自动匹配订单、换算汇率、计算账龄。', btn:'回款核销 → 订单归档', btnClass:'btn-success' },
+    '10': { title:'📁 归档', desc:'订单已完成！全流程数据已沉淀至数据中心。', btn:'查看利润分析', btnClass:'btn-primary' }
+  };
+  const a = actions[activeNodeId] || actions['02'];
+  document.getElementById('actionTitle').textContent = a.title;
+  document.getElementById('actionDesc').textContent = a.desc;
+
+  // 节点级权限检查
+  const canEdit = window.Permission ? Permission.canEditNode(activeNodeId) : true;
+  const isArchived = activeNodeId === '10';
+
+  if (!canEdit && !isArchived) {
+    // 只读模式
+    document.getElementById('actionButtons').innerHTML = `
+      <div style="background:#fff3cd;padding:10px 14px;border-radius:10px;font-size:12px;color:#856404;width:100%;text-align:center">
+        <i class="fas fa-lock"></i> 当前节点由「${getNodeOwnerName(activeNodeId)}」负责，您只有查看权限
+      </div>
+      <button class="btn btn-outline" onclick="reportIssue()"><i class="fas fa-exclamation-triangle"></i> 上报异常</button>`;
+  } else {
+    document.getElementById('actionButtons').innerHTML = `
+      <button class="btn ${a.btnClass}" onclick="completeNode()"><i class="fas fa-check"></i> ${a.btn}</button>
+      <button class="btn btn-outline" onclick="reportIssue()"><i class="fas fa-exclamation-triangle"></i> 上报异常</button>`;
+  }
+}
+
+// 节点负责人名称
+function getNodeOwnerName(nodeId) {
+  const owners = {'01':'外贸业务员','02':'外贸业务员','03':'设计师','04':'工厂管理员','05':'QC质检员','06':'物流员','07':'物流员','08':'物流员','09':'财务人员','10':'系统'};
+  return owners[nodeId] || '相关人员';
+}
+
+// ===== Complete Node → Auto-Trigger Next =====
+async function completeNode() {
+  if (!currentOrder) { if(typeof Toast!=='undefined') Toast.error('订单数据未加载，请刷新重试'); else alert('订单数据未加载'); return; }
+
+  const nodeMap = {'设计':'03','打样':'03','采购':'04','生产':'04','装箱':'06','QC':'05','出货':'07','已完成':'10'};
+  const curNodeId = nodeMap[currentOrder.status] || '02';
+
+  // 节点级权限检查
+  if (window.Permission && !Permission.canEditNode(curNodeId)) {
+    if (typeof Toast !== 'undefined') Toast.error('您没有当前节点的编辑权限，请联系' + getNodeOwnerName(curNodeId));
+    else alert('权限不足');
+    return;
+  }
+
+  Loading.show('处理中...');
+  const nextIdx = WORKFLOW.findIndex(n => n.id === curNodeId) + 1;
+
+  // Archive (node 10 → done)
+  if (nextIdx >= WORKFLOW.length) {
+    if (window.DataService) {
+      await DataService.orders.updateStatus(orderId, '已完成', 100).catch(()=>{});
+    }
+    // Also update localStorage
+    updateLocalOrder('已完成', 100);
+    currentOrder.status = '已完成'; currentOrder.progress = 100;
+    Loading.hide();
+    if(typeof Toast!=='undefined') Toast.success('订单已归档！');
+    renderWorkflow('10'); updateActionSection('10', currentOrder);
+    return;
+  }
+
+  const nextNode = WORKFLOW[nextIdx];
+  const statusMap = {'03':'设计','04':'生产','05':'QC','06':'装箱','07':'出货','08':'出货','09':'出货','10':'已完成'};
+  const newStatus = statusMap[nextNode.id] || '生产';
+  const newProgress = parseInt(nextNode.id) * 10;
+
+  // Try Supabase
+  if (window.DataService) {
+    try {
+      await DataService.orders.updateStatus(orderId, newStatus, newProgress);
+    } catch(e) { console.warn('云端更新失败，已保存到本地:', e.message); }
+  }
+
+  // Always update localStorage as backup
+  updateLocalOrder(newStatus, newProgress);
+
+  currentOrder.status = newStatus;
+  currentOrder.progress = newProgress;
+  renderWorkflow(nextNode.id);
+  updateActionSection(nextNode.id, currentOrder);
+  document.getElementById('sCurrentNode').textContent = `[${nextNode.id}] ${nextNode.name}`;
+  Loading.hide();
+  if(typeof Toast!=='undefined') Toast.success('已进入节点 ['+nextNode.id+'] '+nextNode.name);
+}
+
+function updateLocalOrder(status, progress) {
+  try {
+    const orders = JSON.parse(localStorage.getItem('orders')||'[]');
+    const idx = orders.findIndex(o => o.id===orderId || o.pl_number===orderId);
+    if (idx!==-1) { orders[idx].status=status; orders[idx].progress=progress; orders[idx].updatedAt=new Date().toISOString(); localStorage.setItem('orders',JSON.stringify(orders)); }
+  } catch(e){}
+}
+
+function jumpToNode(nodeId) {
+  renderWorkflow(nodeId);
+  updateActionSection(nodeId, currentOrder);
+  Toast.info(`已跳转到节点 [${nodeId}] ${WORKFLOW.find(n=>n.id===nodeId)?.name}`);
+}
+
+async function reportIssue() {
+  if (typeof ConfirmModal !== 'undefined') {
+    ConfirmModal.show({
+      title:'上报异常', message:'确定要上报当前节点的异常吗？异常将推送到预警中心。',
+      confirmText:'确认上报', cancelText:'取消', type:'warning',
+      onConfirm: async () => {
+        // 1. 标记订单为延期
+        if (window.DataService && currentOrder) {
+          try {
+            await DataService.orders.update(orderId, { is_delayed:true, delay_reason:'节点异常上报' });
+          } catch(e) {}
+        }
+        // 2. 创建通知记录
+        var notif = {
+          id: 'n_' + Date.now(),
+          title: '订单异常：' + (currentOrder ? currentOrder.pl_number : orderId),
+          message: '订单节点异常上报，当前状态：' + (currentOrder ? currentOrder.status : '未知'),
+          type: 'warning',
+          orderId: orderId,
+          time: new Date().toISOString(),
+          read: false
+        };
+        var notifications = JSON.parse(localStorage.getItem('anomaly_notifications') || '[]');
+        notifications.unshift(notif);
+        localStorage.setItem('anomaly_notifications', JSON.stringify(notifications));
+        // 3. 写 Supabase 通知表
+        if (window.DataService) {
+          try {
+            await DataService.notifications.create({
+              user_id: 'system',
+              title: notif.title,
+              message: notif.message,
+              type: 'warning',
+              related_order_id: orderId
+            });
+          } catch(e) {}
+        }
+        if (typeof Toast !== 'undefined') Toast.success('异常已上报！可到预警中心查看');
+      }
+    });
+  } else { alert('异常已上报'); }
+}
+
+// ===== File Upload =====
+let uploadedFiles = [];
+async function handleFileUpload(files) {
+  for (const file of files) {
+    // 1. 立即显示占位（消除等待感）
+    const tempId = 'tmp_' + Date.now();
+    const tempFile = { name: file.name, url: '', size: file.size, _temp: true, _id: tempId };
+    uploadedFiles.push(tempFile);
+    renderFiles();
+
+    // 2. 更新占位为上传中状态
+    const updateTemp = (msg) => {
+      const idx = uploadedFiles.findIndex(f => f._id === tempId);
+      if (idx !== -1) uploadedFiles[idx]._status = msg;
+      renderFiles();
+    };
+    updateTemp('压缩中...');
+
+    // 3. 图片压缩（>500KB 的图片自动缩小）
+    let uploadFile = file;
+    if (file.type.startsWith('image/') && file.size > 500 * 1024) {
+      uploadFile = await compressImage(file, 1600, 0.8);
+      updateTemp('上传中...');
+    } else {
+      updateTemp('上传中...');
+    }
+
+    // 4. 直接上传（最快路径）
+    let publicUrl = '';
+    let filePath = '';
+
+    if (window.supabase && window.supabase.storage) {
+      try {
+        const ext = uploadFile.name.split('.').pop();
+        const fileName = Date.now() + '_' + Math.random().toString(36).slice(2,6) + '.' + ext;
+        filePath = 'orders/' + orderId + '/' + fileName;
+        const { error } = await window.supabase.storage
+          .from('documents')
+          .upload(filePath, uploadFile, {
+            upsert: true,
+            cacheControl: '31536000',
+            contentType: uploadFile.type || (filePath.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream')
+          });
+        if (!error) {
+          const config = window.SupabaseConfig || { URL: 'https://uujlzxidillcvqjxmqnj.supabase.co' };
+          publicUrl = config.URL + '/storage/v1/object/public/documents/' + filePath;
+        }
+      } catch(e) { console.warn('上传异常:', e.message); }
+    }
+
+    // 5. 本地回退
+    if (!publicUrl) {
+      updateTemp('本地存储...');
+      publicUrl = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(uploadFile);
+      });
+    }
+
+    // 6. 替换占位为最终结果
+    const idx = uploadedFiles.findIndex(f => f._id === tempId);
+    if (idx !== -1) {
+      uploadedFiles[idx] = { name: file.name, url: publicUrl, size: file.size, path: filePath };
+    }
+    if (publicUrl.startsWith('http') && window.DataService && orderId) {
+      DataService.files.attachToOrder(orderId, {
+        file_name: file.name, file_path: filePath, file_type: 'other', file_size: file.size, public_url: publicUrl
+      }).catch(() => {});
+    }
+  }
+  renderFiles();
+}
+
+// 图片压缩（Canvas 实现，不损失体验）
+function compressImage(file, maxWidth, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = img.width, h = img.height;
+      if (w <= maxWidth) { resolve(file); return; } // 不需要压缩
+      const ratio = maxWidth / w;
+      const canvas = document.createElement('canvas');
+      canvas.width = maxWidth;
+      canvas.height = Math.round(h * ratio);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        const compressed = new File([blob], file.name, { type: file.type });
+        resolve(compressed);
+      }, file.type, quality);
+    };
+    img.src = url;
+  });
+}
+
+function renderFiles() {
+  const el = document.getElementById('fileList');
+  if (uploadedFiles.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = uploadedFiles.map((f, i) => {
+    const url = f.url || '';
+    const isImg = url ? FileViewer.isImage(url, f.name) : /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(f.name);
+    const icon = isImg ? 'fa-image' : 'fa-file';
+    const sizeText = f.size ? (f.size/1024).toFixed(1) + ' KB' : '';
+    if (f._temp) {
+      return `<div class="file-item" style="opacity:.7">
+        <div class="file-icon" style="animation:pulse 1s infinite"><i class="fas fa-spinner fa-pulse"></i></div>
+        <div style="flex:1"><div class="file-name">${f.name}</div><div class="file-size">${sizeText} · ${f._status||'准备中...'}</div></div>
+      </div>`;
+    }
+    return `
+    <div class="file-item">
+      <div class="file-icon"><i class="fas ${icon}"></i></div>
+      <div style="flex:1"><div class="file-name">${f.name}</div><div class="file-size">${sizeText}</div></div>
+      ${url ? FileViewer.renderFileActions(url, f.name) : ''}
+      <button onclick="event.stopPropagation();deleteFile(${i})" title="删除" style="border:none;background:#fee2e2;color:#ef4444;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:13px"><i class="fas fa-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteFile(index) {
+  const file = uploadedFiles[index];
+  if (!file) return;
+  if (typeof ConfirmModal !== 'undefined') {
+    ConfirmModal.show({
+      title: '确认删除', message: '确定要删除「' + file.name + '」吗？此操作不可恢复。',
+      confirmText: '删除', cancelText: '取消', type: 'danger',
+      onConfirm: async () => { await doDeleteFile(index); }
+    });
+  } else {
+    if (confirm('删除「' + file.name + '」？')) await doDeleteFile(index);
+  }
+}
+
+async function doDeleteFile(index) {
+  const file = uploadedFiles[index];
+  // 从 Supabase Storage 删除
+  if (file.path && window.supabase && window.supabase.storage) {
+    try { await window.supabase.storage.from('documents').remove([file.path]); } catch(e) { console.warn(e); }
+  }
+  // 从本地列表移除
+  uploadedFiles.splice(index, 1);
+  renderFiles();
+  if (typeof Toast !== 'undefined') Toast.success(file.name + ' 已删除');
+}
+
+function openSidePanel() { document.getElementById('sidePanel').classList.add('active'); document.getElementById('overlay').classList.add('active'); }
+function closeSidePanel() { document.getElementById('sidePanel').classList.remove('active'); document.getElementById('overlay').classList.remove('active'); }
+
+// Init
+document.addEventListener('DOMContentLoaded', loadOrder);
+</script>
+</body>
+</html>

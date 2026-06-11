@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>捷隆纺织 - 官网首页</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .navbar {
+      background: white;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+    .nav-links {
+      display: none;
+    }
+    @media (min-width: 768px) {
+      .nav-links {
+        display: flex;
+        gap: 24px;
+      }
+      .nav-links a {
+        text-decoration: none;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .nav-links a:hover {
+        color: #3b82f6;
+      }
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lang-select {
+      padding: 6px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+      cursor: pointer;
+    }
+    .login-btn {
+      padding: 8px 20px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .login-btn:hover {
+      background: #2563eb;
+    }
+    .hero-section {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 48px 24px;
+      text-align: center;
+      color: white;
+    }
+    .hero-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+    }
+    .hero-subtitle {
+      font-size: 15px;
+      color: rgba(255,255,255,0.8);
+      margin: 0 0 24px 0;
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 32px;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: white;
+      margin: 0;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .carousel-section {
+      background: white;
+      padding: 24px;
+      margin-top: 16px;
+    }
+    .carousel {
+      height: 120px;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      font-size: 16px;
+    }
+    .carousel-indicators {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d1d5db;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .indicator.active {
+      background: #3b82f6;
+    }
+    .pattern-section {
+      padding: 24px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    @media (min-width: 768px) {
+      .pattern-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    .pattern-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .pattern-card:hover {
+      transform: translateY(-4px);
+    }
+    .pattern-image {
+      height: 140px;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pattern-image i {
+      font-size: 40px;
+      color: #9ca3af;
+    }
+    .pattern-info {
+      padding: 12px;
+    }
+    .pattern-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .pattern-code {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .contact-section {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 32px 24px;
+      margin-top: 24px;
+    }
+    .contact-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+      margin: 0 0 20px 0;
+    }
+    .contact-info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .contact-item i {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    .contact-text {
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+    }
+    .footer {
+      background: #111827;
+      padding: 16px 24px;
+      text-align: center;
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-logo">
+      <i class="fas fa-industry"></i> 捷隆纺织
+    </div>
+    <div class="nav-links">
+      <a href="#products">产品中心</a>
+      <a href="#about">关于我们</a>
+      <a href="#contact">联系方式</a>
+    </div>
+    <div class="nav-actions">
+      <select class="lang-select">
+        <option>中文</option>
+        <option>English</option>
+        <option>Français</option>
+      </select>
+      <button class="login-btn" onclick="handleLoginClick()">登录</button>
+    </div>
+  </nav>
+
+  <section class="hero-section">
+    <h1 class="hero-title">品质纺织 · 全球信赖</h1>
+    <p class="hero-subtitle">专注纺织品出口贸易，为全球客户提供优质产品与服务</p>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <p class="stat-value">20+</p>
+        <p class="stat-label">年行业经验</p>
+      </div>
+      <div class="stat-item">
+        <p class="stat-value">50+</p>
+        <p class="stat-label">服务国家</p>
+      </div>
+      <div class="stat-item">
+        <p class="stat-value">1000+</p>
+        <p class="stat-label">合作客户</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="carousel-section">
+    <div class="carousel">
+      <i class="fas fa-image" style="margin-right: 12px;"></i> 优质面料展示 - 花卉系列
+    </div>
+    <div class="carousel-indicators">
+      <span class="indicator active"></span>
+      <span class="indicator"></span>
+      <span class="indicator"></span>
+    </div>
+  </section>
+
+  <section class="pattern-section" id="products">
+    <h2 class="section-title">热门花型</h2>
+    <div class="pattern-grid">
+      <div class="pattern-card">
+        <div class="pattern-image">
+          <i class="fas fa-flower"></i>
+        </div>
+        <div class="pattern-info">
+          <p class="pattern-name">花卉系列</p>
+          <p class="pattern-code">HX-2026-001</p>
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-image">
+          <i class="fas fa-leaf"></i>
+        </div>
+        <div class="pattern-info">
+          <p class="pattern-name">植物系列</p>
+          <p class="pattern-code">ZW-2026-002</p>
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-image">
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="pattern-info">
+          <p class="pattern-name">几何图案</p>
+          <p class="pattern-code">JH-2026-003</p>
+        </div>
+      </div>
+      <div class="pattern-card">
+        <div class="pattern-image">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div class="pattern-info">
+          <p class="pattern-name">抽象艺术</p>
+          <p class="pattern-code">CX-2026-004</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact-section" id="contact">
+    <h3 class="contact-title">联系我们</h3>
+    <div class="contact-info">
+      <div class="contact-item">
+        <i class="fas fa-map-marker-alt"></i>
+        <span class="contact-text">浙江省杭州市萧山区经济技术开发区</span>
+      </div>
+      <div class="contact-item">
+        <i class="fas fa-phone"></i>
+        <span class="contact-text">+86 571 8888 8888</span>
+      </div>
+      <div class="contact-item">
+        <i class="fas fa-envelope"></i>
+        <span class="contact-text">contact@jielong-textile.com</span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    Copyright 2026 捷隆纺织 All Rights Reserved
+  </footer>
+
+  <script>
+    function handleLoginClick() {
+      if (window.parent && window.parent !== window && typeof window.parent.loadPage === 'function') {
+        window.parent.loadPage('pages/login.html');
+      } else {
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+</body>
+</html>

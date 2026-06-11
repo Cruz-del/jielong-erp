@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>物流与单证 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/permissions.js"></script>
+  <style>
+    :root{--bg:#eef0f4;--card:#fff;--text:#1e293b;--text-secondary:#64748b;--border:#e8ecf1;--shadow-sm:0 1px 2px rgba(0,0,0,.03),0 2px 8px rgba(0,0,0,.04);}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased}
+    .header{background:linear-gradient(155deg,#0f2744 0%,#1b3d62 40%,#1e4d7b 100%);padding:24px 20px 22px;color:white;position:relative;overflow:hidden}
+    .header::before{content:'';position:absolute;top:-50px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);border-radius:50%}
+    .header-title{font-size:20px;font-weight:700;margin:0;position:relative;z-index:1}
+    .header-subtitle{font-size:12.5px;color:rgba(255,255,255,.6);margin-top:5px;position:relative;z-index:1}
+    .quick-menu{padding:16px 14px}
+    .quick-title{font-size:14px;font-weight:700;color:var(--text);margin:0 0 12px 0;display:flex;align-items:center;gap:7px}
+    .quick-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--border),transparent)}
+    .quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .quick-item{background:var(--card);border-radius:14px;padding:20px 8px 17px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+    .quick-item::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(37,99,235,.03) 0%,transparent 70%);opacity:0;transition:opacity .25s}
+    .quick-item:active{transform:scale(.96)}
+    .quick-item:active::after{opacity:1}
+    .quick-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;z-index:1;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .quick-label{font-size:12.5px;color:var(--text);text-align:center;font-weight:600;position:relative;z-index:1}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">🚢 物流与单证</h1>
+    <p class="header-subtitle">装柜 · 报关 · 文件管理</p>
+  </div>
+  <div class="quick-menu">
+    <h3 class="quick-title">核心工具</h3>
+    <div class="quick-grid">
+      <div class="quick-item" onclick="nav('pages/loading.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#2563eb;"><i class="fas fa-ship"></i></div>
+        <span class="quick-label">装柜管理</span>
+      </div>
+      <div class="quick-item" onclick="nav('pages/docs.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#fed7aa,#fdba74);color:#c2410c;"><i class="fas fa-file-alt"></i></div>
+        <span class="quick-label">报关单证</span>
+      </div>
+      <div class="quick-item" onclick="nav('pages/files.html')">
+        <div class="quick-icon" style="background:linear-gradient(135deg,#a7f3d0,#6ee7b7);color:#0d9488;"><i class="fas fa-folder-open"></i></div>
+        <span class="quick-label">文件中心</span>
+      </div>
+    </div>
+  </div>
+  <script>function nav(p){if(window.parent&&window.parent!==window&&typeof window.parent.loadPage==='function'){window.parent.loadPage(p)}else{window.location.href=p}}
+    document.addEventListener('DOMContentLoaded',function(){
+      if(!window.Permission)return;
+      document.querySelectorAll('.quick-item').forEach(item=>{
+        var label=item.querySelector('.quick-label');if(!label)return;
+        if(!Permission.canSeeCard(label.textContent.trim()))item.style.display='none';
+      });
+      document.querySelectorAll('.quick-menu').forEach(function(m){
+        if(m.querySelectorAll('.quick-item:not([style*="display:none"])').length===0)m.style.display='none';
+      });
+    });
+  </script>
+</body>
+</html>

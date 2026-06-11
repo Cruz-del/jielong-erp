@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>单据识别上传 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/supabase-storage.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .upload-section {
+      padding: 24px;
+    }
+    .upload-area {
+      border: 3px dashed #d1d5db;
+      border-radius: 20px;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: white;
+    }
+    .upload-area:hover {
+      border-color: #3b82f6;
+      background: #f9fafb;
+    }
+    .upload-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .upload-icon i {
+      font-size: 40px;
+      color: #3b82f6;
+    }
+    .upload-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 8px 0;
+    }
+    .upload-hint {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0 0 20px 0;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .action-btn {
+      flex: 1;
+      max-width: 140px;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .action-btn.camera {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+    }
+    .action-btn.gallery {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .action-btn i {
+      font-size: 20px;
+    }
+    .result-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+      display: none;
+    }
+    .result-section.active {
+      display: block;
+    }
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .result-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .result-status {
+      padding: 4px 10px;
+      background: #dcfce7;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #16a34a;
+    }
+    .result-fields {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .result-item {
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 10px;
+    }
+    .result-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .result-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .order-select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      background: white;
+      margin-bottom: 16px;
+    }
+    .confirm-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: #3b82f6;
+      color: white;
+    }
+    .history-section {
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .history-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .history-item {
+      padding: 14px;
+      background: #f9fafb;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-info {
+      flex: 1;
+    }
+    .history-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 4px 0;
+    }
+    .history-time {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .history-status {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .history-status.success {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .history-status.pending {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+    }
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: #dcfce7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .success-icon i {
+      font-size: 32px;
+      color: #16a34a;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 8px 0;
+    }
+    .modal-desc {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0 0 20px 0;
+    }
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: #3b82f6;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">单据识别</h1>
+    <p class="header-subtitle">拍照或上传识别发票/水单</p>
+  </div>
+
+  <div class="upload-section">
+    <div class="upload-area" onclick="triggerFileInput()">
+      <div class="upload-icon">
+        <i class="fas fa-camera"></i>
+      </div>
+      <p class="upload-text">点击或拖拽上传图片</p>
+      <p class="upload-hint">支持发票、水单、装箱单等识别</p>
+      <div class="action-buttons">
+        <button class="action-btn camera" onclick="event.stopPropagation(); openCamera()">
+          <i class="fas fa-camera"></i>
+          拍照
+        </button>
+        <button class="action-btn gallery" onclick="event.stopPropagation(); triggerFileInput()">
+          <i class="fas fa-image"></i>
+          选择图片
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-section" id="resultSection">
+    <div class="result-header">
+      <p class="result-title">识别结果</p>
+      <span class="result-status">识别成功</span>
+    </div>
+    <div class="result-fields">
+      <div class="result-item">
+        <div class="result-label">单据类型</div>
+        <div class="result-value">发票</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">发票编号</div>
+        <div class="result-value">INV-2026-001</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">金额</div>
+        <div class="result-value">$50,000</div>
+      </div>
+      <div class="result-item">
+        <div class="result-label">日期</div>
+        <div class="result-value">2026-06-01</div>
+      </div>
+    </div>
+    <select class="order-select">
+      <option>选择归档订单</option>
+      <option>PL-2026-0001 - ABC Trading</option>
+      <option>PL-2026-0002 - XYZ Fashion</option>
+      <option>PL-2026-0003 - Euro Textile</option>
+    </select>
+    <button class="confirm-btn" onclick="openSuccessModal()">
+      <i class="fas fa-archive"></i> 一键归档
+    </button>
+  </div>
+
+  <div class="history-section">
+    <div class="history-header">
+      <p class="history-title">最近识别记录</p>
+    </div>
+    <div class="history-list">
+      <div class="history-item">
+        <div class="history-info">
+          <p class="history-number">INV-2026-001</p>
+          <p class="history-time">2026-06-07 10:30</p>
+        </div>
+        <span class="history-status success">已归档</span>
+      </div>
+      <div class="history-item">
+        <div class="history-info">
+          <p class="history-number">INV-2026-002</p>
+          <p class="history-time">2026-06-06 14:20</p>
+        </div>
+        <span class="history-status success">已归档</span>
+      </div>
+      <div class="history-item">
+        <div class="history-info">
+          <p class="history-number">PACKING-001</p>
+          <p class="history-time">2026-06-05 09:15</p>
+        </div>
+        <span class="history-status pending">待归档</span>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*,.pdf" capture="environment" style="display: none;" onchange="handleFileUpload(this)">
+
+  <div class="modal" id="successModal">
+    <div class="modal-content">
+      <div class="success-icon">
+        <i class="fas fa-check"></i>
+      </div>
+      <h3 class="modal-title">归档成功</h3>
+      <p class="modal-desc">识别结果已保存到订单PL-2026-0001的附件中</p>
+      <button class="modal-btn" onclick="closeSuccessModal()">完成</button>
+    </div>
+  </div>
+
+  <script>
+    function triggerFileInput() {
+      document.getElementById('fileInput').click();
+    }
+
+    function openCamera() {
+      document.getElementById('fileInput').click();
+    }
+
+    async function handleFileUpload(input) {
+      if (!input.files.length) return;
+      const file = input.files[0];
+      if (typeof Loading !== 'undefined') Loading.show('识别中...');
+
+      // 上传到 Supabase
+      let publicUrl = '';
+      if (window.SupabaseStorage) {
+        const result = await SupabaseStorage.uploadFile(file, 'ai-scan');
+        if (result.success) publicUrl = result.publicUrl;
+      }
+
+      // 回退本地
+      if (!publicUrl) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          publicUrl = e.target.result;
+          showResult(file, publicUrl);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      showResult(file, publicUrl);
+    }
+
+    function showResult(file, url) {
+      document.getElementById('resultSection').classList.add('active');
+      if (typeof Loading !== 'undefined') Loading.hide();
+      if (typeof Toast !== 'undefined') Toast.success(file.name + ' 识别完成');
+    }
+
+    function openSuccessModal() {
+      document.getElementById('successModal').classList.add('active');
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.remove('active');
+      document.getElementById('resultSection').classList.remove('active');
+      document.getElementById('fileInput').value = '';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>报关单证生成 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    :root{--bg:#eef0f4;--card:#fff;--text:#1e293b;--text2:#64748b;--accent:#2563eb;--success:#10b981;--warn:#f59e0b;--danger:#ef4444;--shadow-sm:0 1px 2px rgba(0,0,0,.03),0 2px 8px rgba(0,0,0,.04);--shadow-md:0 4px 6px rgba(0,0,0,.04),0 12px 32px rgba(0,0,0,.06);--radius:14px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);min-height:100vh;padding-bottom:20px;-webkit-font-smoothing:antialiased}
+
+    .header{background:linear-gradient(155deg,#0f2744,#1b3d62 40%,#1e4d7b);padding:20px 16px;color:#fff;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
+    .header::after{content:'';position:absolute;top:-40px;right:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 70%);border-radius:50%}
+    .back-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff;position:relative;z-index:1}
+    .header-title{font-size:18px;font-weight:700;margin:0;position:relative;z-index:1}
+    .header-subtitle{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;position:relative;z-index:1}
+
+    .card{background:var(--card);margin:12px 14px;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm)}
+
+    .step-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-bottom:8px}
+    .step-1{background:#eff4ff;color:var(--accent)}
+    .step-2{background:#fef3c7;color:#b45309}
+    .step-3{background:#dcfce7;color:#16a34a}
+
+    .tpl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .tpl-card{background:#f8fafc;border-radius:12px;padding:14px 8px 10px;cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);border:2px solid transparent;text-align:center;position:relative;overflow:hidden}
+    .tpl-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;transition:all .2s}
+    .tpl-card.invoice::before{background:#2563eb}
+    .tpl-card.packing::before{background:#16a34a}
+    .tpl-card.co::before{background:#d97706}
+    .tpl-card.customs::before{background:#dc2626}
+    .tpl-card.active{background:#fff;box-shadow:var(--shadow-md);transform:translateY(-1px)}
+    .tpl-card.active.invoice{border-color:#2563eb}
+    .tpl-card.active.packing{border-color:#16a34a}
+    .tpl-card.active.co{border-color:#d97706}
+    .tpl-card.active.customs{border-color:#dc2626}
+    .tpl-card:active{transform:scale(.97)}
+    .tpl-icon-wrap{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:18px;transition:all .2s}
+    .tpl-card.active .tpl-icon-wrap{transform:scale(1.1)}
+    .tpl-name{font-size:11px;font-weight:600;color:var(--text);line-height:1.2}
+
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .form-group{margin-bottom:8px}
+    .form-label{font-size:10.5px;font-weight:600;color:var(--text2);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+    .form-input{width:100%;padding:10px 12px;border:1.5px solid #e8ecf1;border-radius:10px;font-size:13px;outline:none;font-family:inherit;background:#f8fafc;transition:all .2s}
+    .form-input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+
+    .preview-paper{background:#fff;border-radius:10px;border:1px solid #e8ecf1;overflow:hidden;position:relative}
+    .preview-letterhead{background:linear-gradient(135deg,#1e3a5f,#2d5a87);padding:20px 16px 16px;color:#fff;text-align:center}
+    .preview-co-name{font-size:13px;font-weight:700;letter-spacing:1px}
+    .preview-doc-type{font-size:10px;opacity:.7;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
+    .preview-body{padding:16px;font-size:11px;line-height:1.7;color:var(--text);font-family:'Courier New',Courier,monospace}
+    .preview-body table{width:100%;border-collapse:collapse;margin:8px 0}
+    .preview-body td,.preview-body th{border:1px solid #d1d5db;padding:4px 6px;font-size:10px;text-align:left}
+    .preview-body th{background:#f1f5f9;font-weight:600}
+    .preview-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;color:#9ca3af}
+    .preview-empty i{font-size:40px;margin-bottom:10px;opacity:.4}
+
+    .btn{flex:1;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
+    .btn:active{transform:scale(.97)}
+    .btn-accent{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.2)}
+    .btn-success{background:var(--success);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.2)}
+    .btn-outline{background:#fff;color:var(--text);border:1.5px solid #e8ecf1}
+
+    @media(max-width:360px){.tpl-grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+  <div>
+    <h1 class="header-title">单证生成</h1>
+    <p class="header-subtitle" id="orderTitle">Invoice · Packing List · CO · Customs</p>
+  </div>
+</div>
+
+<!-- Step 1: Template -->
+<div class="card">
+  <div class="step-badge step-1"><i class="fas fa-1"></i> 选择模板</div>
+  <div class="tpl-grid" id="tplGrid">
+    <div class="tpl-card invoice active" data-tpl="invoice" onclick="selectTemplate('invoice',this)">
+      <div class="tpl-icon-wrap" style="background:#dbeafe;color:#2563eb"><i class="fas fa-file-invoice"></i></div>
+      <div class="tpl-name">Invoice</div>
+    </div>
+    <div class="tpl-card packing" data-tpl="packing" onclick="selectTemplate('packing',this)">
+      <div class="tpl-icon-wrap" style="background:#dcfce7;color:#16a34a"><i class="fas fa-boxes"></i></div>
+      <div class="tpl-name">Packing</div>
+    </div>
+    <div class="tpl-card co" data-tpl="co" onclick="selectTemplate('co',this)">
+      <div class="tpl-icon-wrap" style="background:#fef3c7;color:#d97706"><i class="fas fa-certificate"></i></div>
+      <div class="tpl-name">C/O</div>
+    </div>
+    <div class="tpl-card customs" data-tpl="customs" onclick="selectTemplate('customs',this)">
+      <div class="tpl-icon-wrap" style="background:#fee2e2;color:#dc2626"><i class="fas fa-file-export"></i></div>
+      <div class="tpl-name">Customs</div>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2: Invoice Fields -->
+<div class="card" id="cardInvoice">
+  <div class="step-badge step-2"><i class="fas fa-2"></i> Invoice 信息</div>
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">发票号 / Invoice No.</label><input class="form-input" id="inv_invoiceNo" placeholder="INV-JL2026-0001" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">日期 / Date</label><input class="form-input" id="inv_date" type="date" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">合同号 / Contract No.</label><input class="form-input" id="inv_contractNo" placeholder="e.g. P506" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">贸易术语 / Terms</label>
+      <select class="form-input" id="inv_terms" onchange="generateDoc()"><option>FOB QINGDAO</option><option>CIF NEW YORK</option><option>CFR</option><option>EXW</option></select></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">卖方 / Seller</label><input class="form-input" id="inv_seller" placeholder="WEIFANG JIELONG TEXTILE CO., LTD.&#10;NO. 888, ZHEJIANG, CHINA" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">买方 / Buyer</label><input class="form-input" id="inv_buyer" placeholder="Customer name & full address" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">起运港 / Loading Port</label><input class="form-input" id="inv_loadingPort" placeholder="QINGDAO, CHINA" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">目的港 / Discharge Port</label><input class="form-input" id="inv_destPort" placeholder="NEW YORK, USA" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">付款方式 / Payment</label>
+      <select class="form-input" id="inv_payment" onchange="generateDoc()"><option>T/T</option><option>L/C AT SIGHT</option><option>D/P</option></select></div>
+    <div class="form-group"><label class="form-label">原产国 / Origin</label><input class="form-input" id="inv_origin" value="CHINA" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">品名描述 / Goods Description</label><input class="form-input" id="inv_goods" placeholder="100% POLYESTER WOVEN FABRIC" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">HS编码 / HS Code</label><input class="form-input" id="inv_hsCode" placeholder="5407.61.00" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">数量 / QTY</label><input class="form-input" id="inv_qty" placeholder="600 YDS" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">单价 / Unit Price</label><input class="form-input" id="inv_unitPrice" placeholder="USD 2.50/YARD" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">总金额 / Total Amount</label><input class="form-input" id="inv_amount" placeholder="USD 1,500.00" oninput="generateDoc()"></div>
+  </div>
+</div>
+
+<!-- Step 2: Packing List Fields -->
+<div class="card" id="cardPacking" style="display:none">
+  <div class="step-badge step-2"><i class="fas fa-2"></i> Packing List 信息</div>
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">关联发票号 / Invoice No.</label><input class="form-input" id="pkl_invoiceNo" placeholder="INV-JL2026-0001" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">日期 / Date</label><input class="form-input" id="pkl_date" type="date" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">柜号 / Container No.</label><input class="form-input" id="pkl_container" placeholder="MSCU1234567" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">提单号 / B/L No.</label><input class="form-input" id="pkl_blNo" placeholder="COSU1234567890" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">发货人 / Shipper</label><input class="form-input" id="pkl_shipper" placeholder="WEIFANG JIELONG TEXTILE CO., LTD." oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">起运港 / Loading</label><input class="form-input" id="pkl_loadingPort" placeholder="QINGDAO, CHINA" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">目的港 / Discharge</label><input class="form-input" id="pkl_destPort" placeholder="NEW YORK, USA" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">唛头 / Shipping Marks</label><input class="form-input" id="pkl_marks" placeholder="FRECHI TEX / P506 / MADE IN CHINA" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">品名描述 / Goods</label><input class="form-input" id="pkl_goods" placeholder="100% POLYESTER WOVEN FABRIC" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">总箱数 / Total Cartons</label><input class="form-input" id="pkl_cartons" placeholder="10" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">总数量 / Total QTY</label><input class="form-input" id="pkl_qty" placeholder="600 YDS" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">总毛重 / G.W. (KGS)</label><input class="form-input" id="pkl_gw" placeholder="250.00" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">总净重 / N.W. (KGS)</label><input class="form-input" id="pkl_nw" placeholder="230.00" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">总体积 / MEAS. (CBM)</label><input class="form-input" id="pkl_meas" placeholder="2.500" oninput="generateDoc()"></div>
+  </div>
+</div>
+
+<!-- Step 2: C/O Fields -->
+<div class="card" id="cardCO" style="display:none">
+  <div class="step-badge step-2"><i class="fas fa-2"></i> Certificate of Origin 信息</div>
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">证书编号 / Cert. No.</label><input class="form-input" id="co_certNo" placeholder="CO-JL2026-0001" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">签发日期 / Issue Date</label><input class="form-input" id="co_date" type="date" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">签发机构 / Issuing Body</label><input class="form-input" id="co_body" value="CCPIT / China Customs" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">运输方式 / Transport</label><input class="form-input" id="co_transport" value="BY SEA" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">出口商 / Exporter</label><input class="form-input" id="co_exporter" placeholder="WEIFANG JIELONG TEXTILE CO., LTD." oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">进口商 / Consignee</label><input class="form-input" id="co_consignee" placeholder="Customer name & address" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">起运港 / From</label><input class="form-input" id="co_from" placeholder="QINGDAO, CHINA" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">目的港 / To</label><input class="form-input" id="co_to" placeholder="NEW YORK, USA" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">品名描述 / Goods</label><input class="form-input" id="co_goods" placeholder="100% POLYESTER WOVEN FABRIC" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">HS编码 / HS Code</label><input class="form-input" id="co_hsCode" placeholder="5407.61.00" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">数量 / QTY</label><input class="form-input" id="co_qty" placeholder="600 YDS" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">唛头 / Marks</label><input class="form-input" id="co_marks" placeholder="FRECHI TEX / MADE IN CHINA" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">适用协定 / Applicable Agreement</label><input class="form-input" id="co_agreement" placeholder="RCEP / China-EU FTA / None" oninput="generateDoc()"></div>
+  </div>
+</div>
+
+<!-- Step 2: Customs Fields -->
+<div class="card" id="cardCustoms" style="display:none">
+  <div class="step-badge step-2"><i class="fas fa-2"></i> 报关单 信息</div>
+  <div class="form-grid">
+    <div class="form-group"><label class="form-label">报关单号 / Declaration No.</label><input class="form-input" id="cus_declNo" placeholder="CUS-JL2026-0001" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">申报日期 / Date</label><input class="form-input" id="cus_date" type="date" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">出口口岸 / Port of Export</label><input class="form-input" id="cus_port" placeholder="QINGDAO" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">运输方式 / Transport</label><input class="form-input" id="cus_transport" value="海运 / BY SEA" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">提运单号 / B/L No.</label><input class="form-input" id="cus_blNo" placeholder="COSU1234567890" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">集装箱号 / Container</label><input class="form-input" id="cus_container" placeholder="MSCU1234567" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">境内发货人 / Shipper</label><input class="form-input" id="cus_shipper" placeholder="潍坊捷隆纺织有限公司" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">境外收货人 / Consignee</label><input class="form-input" id="cus_consignee" placeholder="Customer company name & address" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">贸易方式 / Trade Mode</label><input class="form-input" id="cus_tradeMode" value="一般贸易 / GENERAL TRADE" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">成交方式 / Terms</label><input class="form-input" id="cus_terms" value="FOB" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">运抵国 / Dest. Country</label><input class="form-input" id="cus_country" placeholder="USA" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">指运港 / Dest. Port</label><input class="form-input" id="cus_destPort" placeholder="NEW YORK" oninput="generateDoc()"></div>
+    <div class="form-group" style="grid-column:1/-1"><label class="form-label">品名描述 / Goods</label><input class="form-input" id="cus_goods" placeholder="100% POLYESTER WOVEN FABRIC" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">HS编码 / HS Code</label><input class="form-input" id="cus_hsCode" placeholder="5407.61.00" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">数量 / QTY</label><input class="form-input" id="cus_qty" placeholder="600 YDS" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">单价 / Unit Price</label><input class="form-input" id="cus_unitPrice" placeholder="USD 2.50/YARD" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">总金额 / Total</label><input class="form-input" id="cus_amount" placeholder="USD 1,500.00" oninput="generateDoc()"></div>
+    <div class="form-group"><label class="form-label">原产国 / Origin</label><input class="form-input" id="cus_origin" value="CHINA" oninput="generateDoc()"></div>
+  </div>
+</div>
+
+<!-- Step 3: Preview & Actions -->
+<div class="card">
+  <div class="step-badge step-3"><i class="fas fa-3"></i> 预览与导出</div>
+  <div class="preview-paper" id="previewPaper">
+    <div class="preview-letterhead">
+      <div class="preview-co-name">WEIFANG JIELONG TEXTILE CO., LTD.</div>
+      <div class="preview-doc-type" id="docTypeLabel">COMMERCIAL INVOICE</div>
+    </div>
+    <div class="preview-body" id="previewBody">
+      <div class="preview-empty">
+        <i class="fas fa-arrow-up"></i>
+        <span>Fill in the form above to preview</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="btn btn-accent" onclick="downloadDoc()"><i class="fas fa-download"></i> Download</button>
+    <button class="btn btn-outline" onclick="printDoc()"><i class="fas fa-print"></i> Print</button>
+    <button class="btn btn-outline" onclick="copyDoc()"><i class="fas fa-copy"></i> Copy</button>
+  </div>
+</div>
+
+<script>
+var currentTpl = 'invoice';
+
+function selectTemplate(tpl, el) {
+  currentTpl = tpl;
+  document.querySelectorAll('.tpl-card').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  // 只显示对应的表单
+  document.querySelectorAll('[id^="cardInvoice"],[id^="cardPacking"],[id^="cardCO"],[id^="cardCustoms"]').forEach(function(c){c.style.display='none'});
+  var cardMap = {invoice:'cardInvoice',packing:'cardPacking',co:'cardCO',customs:'cardCustoms'};
+  var card = document.getElementById(cardMap[tpl]);
+  if (card) card.style.display = '';
+  var labels = {invoice:'COMMERCIAL INVOICE',packing:'PACKING LIST',co:'CERTIFICATE OF ORIGIN',customs:'CUSTOMS DECLARATION'};
+  document.getElementById('docTypeLabel').textContent = labels[tpl] || '';
+  generateDoc();
+}
+
+function generateDoc() {
+  var v = function(id) { var el = document.getElementById(id); return el ? (el.value || '') : ''; };
+  var html = '';
+  function row(label, value) {
+    return '<tr><td style="font-weight:600;color:#475569;width:32%;font-size:10px;padding:3px 6px">' + label + '</td><td style="font-size:10px;padding:3px 6px">' + (value||'') + '</td></tr>';
+  }
+
+  if (currentTpl === 'invoice') {
+    var invNo = v('inv_invoiceNo') || 'INV-JL' + new Date().getFullYear() + '-0001';
+    var date = v('inv_date') || new Date().toISOString().split('T')[0];
+    var contract = v('inv_contractNo') || 'P506';
+    var terms = v('inv_terms') || 'FOB QINGDAO';
+    var seller = v('inv_seller') || 'WEIFANG JIELONG TEXTILE CO., LTD.';
+    var buyer = v('inv_buyer') || 'TO ORDER';
+    var loading = v('inv_loadingPort') || 'QINGDAO, CHINA';
+    var dest = v('inv_destPort') || 'NEW YORK, USA';
+    var payment = v('inv_payment') || 'T/T';
+    var origin = v('inv_origin') || 'CHINA';
+    var goods = v('inv_goods') || '100% POLYESTER WOVEN FABRIC';
+    var hs = v('inv_hsCode') || '5407.61.00';
+    var qty = v('inv_qty') || '600 YDS';
+    var price = v('inv_unitPrice') || 'USD 2.50/YARD';
+    var amount = v('inv_amount') || 'USD 1,500.00';
+
+    document.getElementById('docTypeLabel').textContent = 'COMMERCIAL INVOICE';
+    html = '<div style="display:flex;justify-content:space-between;margin-bottom:12px">' +
+      '<div style="width:48%"><b>SELLER / EXPORTER:</b><br><span style="font-size:10px">' + seller.replace(/\n/g,'<br>') + '</span></div>' +
+      '<div style="width:48%;text-align:right"><b>COMMERCIAL INVOICE</b><br><span style="font-size:9px">ORIGINAL</span></div></div>' +
+      '<table>' + row('INVOICE NO.', invNo) + row('DATE', date) + row('CONTRACT NO.', contract) + row('TERMS OF TRADE', terms) + '</table>' +
+      '<div style="margin:8px 0"><b>CONSIGNEE / BUYER:</b><br><span style="font-size:10px">' + buyer + '</span></div>' +
+      '<table>' + row('PORT OF LOADING', loading) + row('PORT OF DISCHARGE', dest) + row('PAYMENT TERMS', payment) + row('COUNTRY OF ORIGIN', origin) + '</table>' +
+      '<table style="margin:12px 0"><tr style="background:#1e3a5f;color:#fff"><th style="padding:4px 6px;font-size:9px;width:40%">DESCRIPTION</th><th style="padding:4px 6px;font-size:9px">QTY</th><th style="padding:4px 6px;font-size:9px">UNIT PRICE</th><th style="padding:4px 6px;font-size:9px">AMOUNT</th></tr>' +
+      '<tr><td style="padding:4px 6px;font-size:10px">' + goods + '<br><span style="font-size:8px;color:#64748b">HS: ' + hs + '</span></td><td style="padding:4px 6px;font-size:10px">' + qty + '</td><td style="padding:4px 6px;font-size:10px">' + price + '</td><td style="padding:4px 6px;font-size:10px">' + amount + '</td></tr>' +
+      '<tr style="font-weight:bold"><td colspan="3" style="text-align:right;padding:4px 6px;font-size:10px">TOTAL:</td><td style="padding:4px 6px;font-size:11px">' + amount + '</td></tr></table>' +
+      '<div style="margin-top:12px;font-size:9px;color:#64748b">DECLARATION: WE HEREBY CERTIFY THAT THE ABOVE INFORMATION IS TRUE AND CORRECT.<br>_________________________________<br>AUTHORIZED SIGNATURE & STAMP</div>';
+  }
+
+  else if (currentTpl === 'packing') {
+    var invNo = v('pkl_invoiceNo') || 'INV-JL' + new Date().getFullYear() + '-0001';
+    var date = v('pkl_date') || new Date().toISOString().split('T')[0];
+    var container = v('pkl_container') || 'MSCU1234567';
+    var blNo = v('pkl_blNo') || 'COSU1234567890';
+    var shipper = v('pkl_shipper') || 'WEIFANG JIELONG TEXTILE CO., LTD.';
+    var loading = v('pkl_loadingPort') || 'QINGDAO, CHINA';
+    var dest = v('pkl_destPort') || 'NEW YORK, USA';
+    var marks = v('pkl_marks') || 'FRECHI TEX / MADE IN CHINA';
+    var goods = v('pkl_goods') || '100% POLYESTER WOVEN FABRIC';
+    var cartons = v('pkl_cartons') || '10';
+    var qty = v('pkl_qty') || '600 YDS';
+    var gw = v('pkl_gw') || '250.00';
+    var nw = v('pkl_nw') || '230.00';
+    var meas = v('pkl_meas') || '2.500';
+
+    document.getElementById('docTypeLabel').textContent = 'PACKING LIST';
+    html = '<div style="display:flex;justify-content:space-between;margin-bottom:12px">' +
+      '<div><b>SHIPPER:</b><br><span style="font-size:10px">' + shipper.replace(/\n/g,'<br>') + '</span></div>' +
+      '<div style="text-align:right"><b>PACKING LIST</b><br><span style="font-size:9px">ORIGINAL</span></div></div>' +
+      '<table>' + row('INVOICE NO.', invNo) + row('DATE', date) + row('CONTAINER NO.', container) + row('B/L NO.', blNo) + row('PORT OF LOADING', loading) + row('PORT OF DISCHARGE', dest) + row('MARKS & NOS.', marks) + row('TOTAL PACKAGES', cartons + ' CARTONS') + '</table>' +
+      '<table style="margin:12px 0"><tr style="background:#1e3a5f;color:#fff"><th style="padding:3px 4px;font-size:8px">CARTON</th><th style="padding:3px 4px;font-size:8px">DESCRIPTION</th><th style="padding:3px 4px;font-size:8px">QTY</th><th style="padding:3px 4px;font-size:8px">G.W.(KGS)</th><th style="padding:3px 4px;font-size:8px">N.W.(KGS)</th><th style="padding:3px 4px;font-size:8px">MEAS.(CBM)</th></tr>' +
+      '<tr><td style="padding:3px 4px;font-size:10px">1-' + cartons + '</td><td style="padding:3px 4px;font-size:10px">' + goods + '</td><td style="padding:3px 4px;font-size:10px">' + qty + '</td><td style="padding:3px 4px;font-size:10px">' + gw + '</td><td style="padding:3px 4px;font-size:10px">' + nw + '</td><td style="padding:3px 4px;font-size:10px">' + meas + '</td></tr>' +
+      '<tr style="font-weight:bold"><td style="padding:3px 4px;font-size:10px">TOTAL</td><td style="padding:3px 4px;font-size:10px">' + cartons + ' CTNS</td><td style="padding:3px 4px;font-size:10px">' + qty + '</td><td style="padding:3px 4px;font-size:10px">' + gw + '</td><td style="padding:3px 4px;font-size:10px">' + nw + '</td><td style="padding:3px 4px;font-size:10px">' + meas + '</td></tr></table>' +
+      '<div style="font-size:9px;color:#64748b">SHIPPING MARKS: ' + marks + '<br>_________________________________<br>AUTHORIZED SIGNATURE</div>';
+  }
+
+  else if (currentTpl === 'co') {
+    var certNo = v('co_certNo') || 'CO-JL' + new Date().getFullYear() + '-0001';
+    var date = v('co_date') || new Date().toISOString().split('T')[0];
+    var body = v('co_body') || 'CCPIT / China Customs';
+    var transport = v('co_transport') || 'BY SEA';
+    var exporter = v('co_exporter') || 'WEIFANG JIELONG TEXTILE CO., LTD.';
+    var consignee = v('co_consignee') || 'TO ORDER';
+    var from = v('co_from') || 'QINGDAO, CHINA';
+    var to = v('co_to') || 'NEW YORK, USA';
+    var goods = v('co_goods') || '100% POLYESTER WOVEN FABRIC';
+    var hs = v('co_hsCode') || '5407.61.00';
+    var qty = v('co_qty') || '600 YDS';
+    var marks = v('co_marks') || 'FRECHI TEX / MADE IN CHINA';
+    var agreement = v('co_agreement') || 'None';
+
+    document.getElementById('docTypeLabel').textContent = 'CERTIFICATE OF ORIGIN';
+    html = '<div style="text-align:center;margin-bottom:10px;border:2px solid #1e3a5f;padding:8px">' +
+      '<div style="font-size:11px;font-weight:bold">CERTIFICATE OF ORIGIN</div>' +
+      '<div style="font-size:9px">' + body + '</div></div>' +
+      '<table>' + row('CERTIFICATE NO.', certNo) + row('DATE OF ISSUE', date) + row('EXPORTER', exporter) + row('CONSIGNEE', consignee) + row('MEANS OF TRANSPORT', transport) + row('ROUTE', from + ' TO ' + to) + '</table>' +
+      '<table style="margin:12px 0"><tr style="background:#1e3a5f;color:#fff"><th style="padding:3px 4px;font-size:8px">MARKS</th><th style="padding:3px 4px;font-size:8px">DESCRIPTION</th><th style="padding:3px 4px;font-size:8px">QTY</th><th style="padding:3px 4px;font-size:8px">HS CODE</th></tr>' +
+      '<tr><td style="padding:3px 4px;font-size:10px">' + marks + '</td><td style="padding:3px 4px;font-size:10px">' + goods + '</td><td style="padding:3px 4px;font-size:10px">' + qty + '</td><td style="padding:3px 4px;font-size:10px">' + hs + '</td></tr></table>' +
+      '<div style="font-size:9px;line-height:1.6;margin:8px 0"><b>THIS IS TO CERTIFY</b> that the above goods are of <b>CHINESE ORIGIN</b>.<br>Applicable Agreement: ' + agreement + '</div>' +
+      '<div style="margin-top:16px;font-size:9px;text-align:right">_________________________________<br><b>OFFICIAL STAMP</b><br>' + body + '</div>';
+  }
+
+  else if (currentTpl === 'customs') {
+    var declNo = v('cus_declNo') || 'CUS-JL' + new Date().getFullYear() + '-0001';
+    var date = v('cus_date') || new Date().toISOString().split('T')[0];
+    var port = v('cus_port') || 'QINGDAO';
+    var transport = v('cus_transport') || '海运 / BY SEA';
+    var blNo = v('cus_blNo') || 'COSU1234567890';
+    var container = v('cus_container') || 'MSCU1234567';
+    var shipper = v('cus_shipper') || '潍坊捷隆纺织有限公司';
+    var consignee = v('cus_consignee') || 'TO ORDER';
+    var tradeMode = v('cus_tradeMode') || '一般贸易 / GENERAL TRADE';
+    var terms = v('cus_terms') || 'FOB';
+    var country = v('cus_country') || 'USA';
+    var destPort = v('cus_destPort') || 'NEW YORK';
+    var goods = v('cus_goods') || '100% POLYESTER WOVEN FABRIC';
+    var hs = v('cus_hsCode') || '5407.61.00';
+    var qty = v('cus_qty') || '600 YDS';
+    var price = v('cus_unitPrice') || 'USD 2.50/YARD';
+    var amount = v('cus_amount') || 'USD 1,500.00';
+    var origin = v('cus_origin') || 'CHINA';
+
+    document.getElementById('docTypeLabel').textContent = 'CUSTOMS DECLARATION';
+    html = '<div style="text-align:center;margin-bottom:10px;border-bottom:2px solid #dc2626;padding:8px">' +
+      '<div style="font-size:12px;font-weight:bold;color:#dc2626">中华人民共和国海关出口货物报关单</div>' +
+      '<div style="font-size:9px">CUSTOMS DECLARATION OF THE PRC</div></div>' +
+      '<table>' + row('报关单号 / DECL. NO.', declNo) + row('海关编号 / CUSTOMS NO.', 'CUS-' + declNo) + row('出口口岸 / PORT OF EXPORT', port) + row('运输方式 / TRANSPORT', transport) + row('提运单号 / B/L NO.', blNo) + row('集装箱号 / CONTAINER', container) + row('境内发货人 / SHIPPER', shipper) + row('境外收货人 / CONSIGNEE', consignee) + row('贸易方式 / TRADE MODE', tradeMode) + row('成交方式 / TERMS', terms) + row('运抵国 / DEST. COUNTRY', country) + row('指运港 / DEST. PORT', destPort) + row('出口日期 / EXPORT DATE', date) + row('申报日期 / DECL. DATE', date) + '</table>' +
+      '<table style="margin:12px 0"><tr style="background:#dc2626;color:#fff"><th style="padding:3px 4px;font-size:8px">商品/DESCRIPTION</th><th style="padding:3px 4px;font-size:8px">HS编码</th><th style="padding:3px 4px;font-size:8px">数量/QTY</th><th style="padding:3px 4px;font-size:8px">单价/PRICE</th><th style="padding:3px 4px;font-size:8px">总价/TOTAL</th><th style="padding:3px 4px;font-size:8px">原产国</th></tr>' +
+      '<tr><td style="padding:3px 4px;font-size:10px">' + goods + '</td><td style="padding:3px 4px;font-size:10px">' + hs + '</td><td style="padding:3px 4px;font-size:10px">' + qty + '</td><td style="padding:3px 4px;font-size:10px">' + price + '</td><td style="padding:3px 4px;font-size:10px">' + amount + '</td><td style="padding:3px 4px;font-size:10px">' + origin + '</td></tr></table>' +
+      '<div style="font-size:9px;line-height:1.6;margin:8px 0">兹声明以上申报内容准确无误。WE HEREBY DECLARE THE ABOVE IS TRUE AND CORRECT.</div>' +
+      '<div style="margin-top:10px;display:flex;justify-content:space-between;font-size:9px">' +
+      '<div>申报单位(盖章):<br>___________________</div><div>海关审核(盖章):<br>___________________</div></div>';
+  }
+
+  document.getElementById('previewBody').innerHTML = html;
+}
+
+function downloadDoc() {
+  var preview = document.getElementById('previewBody').innerHTML;
+  if (!preview || preview.indexOf('Fill in') >= 0) { if(typeof Toast!=='undefined') Toast.warning('Please fill in form first'); return; }
+  var html = '<html><head><meta charset="UTF-8"><style>body{font-family:serif;font-size:10px;padding:30px;line-height:1.5;max-width:800px;margin:0 auto;color:#1e293b}table{width:100%;border-collapse:collapse;margin:6px 0}td,th{border:1px solid #64748b;padding:3px 5px;font-size:9px}th{background:#f1f5f9}@media print{body{padding:8mm}}</style></head><body>' + preview + '</body></html>';
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var names = {invoice:'Invoice',packing:'Packing_List',co:'Certificate_of_Origin',customs:'Customs_Declaration'};
+  a.download = (names[currentTpl]||'Document') + '_' + new Date().toISOString().split('T')[0] + '.html';
+  a.click();
+  if (typeof Toast !== 'undefined') Toast.success('Downloaded - open in browser, then Ctrl+P to save as PDF');
+}
+
+function printDoc() {
+  var previewHtml = document.getElementById('previewBody').innerHTML;
+  if (!previewHtml || previewHtml.indexOf('Fill in') >= 0) { if(typeof Toast!=='undefined') Toast.warning('Please fill in form first'); return; }
+  var w = window.open('', '_blank');
+  w.document.write('<html><head><meta charset="UTF-8"><style>body{font-family:serif;font-size:10px;padding:25px;line-height:1.5;max-width:800px;margin:0 auto;color:#1e293b}table{width:100%;border-collapse:collapse;margin:6px 0}td,th{border:1px solid #64748b;padding:3px 5px;font-size:9px}th{background:#f1f5f9}@media print{body{padding:5mm}}</style></head><body>' + previewHtml + '</body></html>');
+  w.document.close();
+  setTimeout(function() { w.print(); }, 800);
+}
+
+function copyDoc() {
+  var preview = document.getElementById('previewBody').innerText;
+  if (!preview || preview.indexOf('Fill in') >= 0) { if(typeof Toast!=='undefined') Toast.warning('Please fill in form first'); return; }
+  if (navigator.clipboard) { navigator.clipboard.writeText(preview).then(function() { if (typeof Toast !== 'undefined') Toast.success('Copied'); }); }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('docDate').value = new Date().toISOString().split('T')[0];
+  generateDoc();
+});
+</script>
+</body>
+</html>

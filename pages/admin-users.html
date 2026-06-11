@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户与角色管理 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/permissions.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .action-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .search-box {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-right: 12px;
+    }
+    .action-btn {
+      padding: 10px 16px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .table-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .table-info {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .status-badge.active {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .status-badge.inactive {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .role-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #eff6ff;
+      color: #2563eb;
+    }
+    .action-icons {
+      display: flex;
+      gap: 8px;
+    }
+    .action-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .action-icon:hover {
+      background: #f3f4f6;
+    }
+    .action-icon.edit {
+      color: #3b82f6;
+    }
+    .action-icon.delete {
+      color: #dc2626;
+    }
+    .tabs-section {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .tab-item {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .tab-item.active {
+      background: #3b82f6;
+      color: white;
+    }
+    .tab-item:not(.active) {
+      color: #6b7280;
+    }
+    .roles-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .roles-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .roles-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .roles-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .role-card {
+      padding: 14px;
+      background: #f9fafb;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .role-info {
+      flex: 1;
+    }
+    .role-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 4px 0;
+    }
+    .role-desc {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .role-action {
+      color: #3b82f6;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .select-box {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: white;
+    }
+    .btn-section {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-full {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .btn-full.primary {
+      background: #3b82f6;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">用户与角色管理</h1>
+    <p class="header-subtitle">管理系统用户和角色权限</p>
+  </div>
+
+  <div class="tabs-section">
+    <span class="tab-item active" onclick="switchTab('users')">用户管理</span>
+    <span class="tab-item" onclick="switchTab('roles')">角色管理</span>
+  </div>
+
+  <div class="action-bar">
+    <input type="text" class="search-box" placeholder="搜索用户名...">
+    <button class="action-btn" onclick="openAddUserModal()">
+      <i class="fas fa-plus"></i> 新增用户
+    </button>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <p class="table-title">用户列表</p>
+      <span class="table-info">共 25 个用户</span>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>用户名</th>
+            <th>角色</th>
+            <th>最后登录</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody">
+          <tr>
+            <td>zhangsan</td>
+            <td><span class="role-badge">跟单员</span></td>
+            <td>2026-06-07 10:30</td>
+            <td><span class="status-badge active">启用</span></td>
+            <td>
+              <div class="action-icons">
+                <div class="action-icon edit" onclick="openEditUserModal('zhangsan')"><i class="fas fa-edit"></i></div>
+                <div class="action-icon delete" onclick="deleteUser('zhangsan')"><i class="fas fa-trash"></i></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>lisi</td>
+            <td><span class="role-badge">财务</span></td>
+            <td>2026-06-06 14:20</td>
+            <td><span class="status-badge active">启用</span></td>
+            <td>
+              <div class="action-icons">
+                <div class="action-icon edit" onclick="openEditUserModal('lisi')"><i class="fas fa-edit"></i></div>
+                <div class="action-icon delete" onclick="deleteUser('lisi')"><i class="fas fa-trash"></i></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>wangwu</td>
+            <td><span class="role-badge">管理员</span></td>
+            <td>2026-06-07 09:00</td>
+            <td><span class="status-badge active">启用</span></td>
+            <td>
+              <div class="action-icons">
+                <div class="action-icon edit" onclick="openEditUserModal('wangwu')"><i class="fas fa-edit"></i></div>
+                <div class="action-icon delete" onclick="deleteUser('wangwu')"><i class="fas fa-trash"></i></div>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>zhaoliu</td>
+            <td><span class="role-badge">跟单员</span></td>
+            <td>2026-06-05 16:45</td>
+            <td><span class="status-badge inactive">禁用</span></td>
+            <td>
+              <div class="action-icons">
+                <div class="action-icon edit" onclick="openEditUserModal('zhaoliu')"><i class="fas fa-edit"></i></div>
+                <div class="action-icon delete" onclick="deleteUser('zhaoliu')"><i class="fas fa-trash"></i></div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal" id="addUserModal">
+    <div class="modal-content">
+      <h3 class="modal-title">新增用户</h3>
+      <div class="form-group">
+        <label class="form-label">用户名</label>
+        <input type="text" class="form-input" placeholder="请输入用户名">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input type="password" class="form-input" placeholder="请输入密码">
+      </div>
+      <div class="form-group">
+        <label class="form-label">角色</label>
+        <select class="select-box">
+          <option>跟单员</option>
+          <option>财务</option>
+          <option>老板</option>
+          <option>管理员</option>
+        </select>
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeAddUserModal()">取消</button>
+        <button class="btn-full primary" onclick="saveAddUser()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="editUserModal">
+    <div class="modal-content">
+      <h3 class="modal-title">编辑用户</h3>
+      <div class="form-group">
+        <label class="form-label">用户名</label>
+        <input type="text" class="form-input" value="zhangsan">
+      </div>
+      <div class="form-group">
+        <label class="form-label">角色</label>
+        <select class="select-box" id="editRoleSelect">
+          <option>超级管理员</option>
+          <option>外贸业务员</option>
+          <option>设计师</option>
+          <option>工厂管理员</option>
+          <option>QC质检员</option>
+          <option>物流员</option>
+          <option>财务人员</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">状态</label>
+        <select class="select-box">
+          <option>启用</option>
+          <option>禁用</option>
+        </select>
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeEditUserModal()">取消</button>
+        <button class="btn-full primary" onclick="saveEditUser()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 角色管理区域 -->
+  <div class="roles-section" style="display: none;">
+    <div class="roles-header">
+      <p class="roles-title">角色列表</p>
+      <button class="action-btn" onclick="openAddRoleModal()" style="padding: 8px 14px; font-size: 12px;">
+        <i class="fas fa-plus"></i> 新增角色
+      </button>
+    </div>
+    <div class="roles-list">
+      <div class="role-card">
+        <div class="role-info">
+          <p class="role-name">超级管理员</p>
+          <p class="role-desc">拥有系统所有权限</p>
+        </div>
+        <div class="role-action" onclick="openEditRoleModal('超级管理员')">编辑</div>
+      </div>
+      <div class="role-card">
+        <div class="role-info">
+          <p class="role-name">跟单主管</p>
+          <p class="role-desc">查看所有跟单，审核异常处理，分配工厂</p>
+        </div>
+        <div class="role-action" onclick="openEditRoleModal('跟单主管')">编辑</div>
+      </div>
+      <div class="role-card">
+        <div class="role-info">
+          <p class="role-name">跟单员</p>
+          <p class="role-desc">仅管理自己负责的订单</p>
+        </div>
+        <div class="role-action" onclick="openEditRoleModal('跟单员')">编辑</div>
+      </div>
+      <div class="role-card">
+        <div class="role-info">
+          <p class="role-name">财务主管</p>
+          <p class="role-desc">查看所有财务数据，核销回款</p>
+        </div>
+        <div class="role-action" onclick="openEditRoleModal('财务主管')">编辑</div>
+      </div>
+      <div class="role-card">
+        <div class="role-info">
+          <p class="role-name">财务助理</p>
+          <p class="role-desc">录入发票、水单，不可核销</p>
+        </div>
+        <div class="role-action" onclick="openEditRoleModal('财务助理')">编辑</div>
+      </div>
+      <div class="role-card">
+        <div class="role-info">
+          <p class="role-name">老板</p>
+          <p class="role-desc">只读所有看板，不可修改业务数据</p>
+        </div>
+        <div class="role-action" onclick="openEditRoleModal('老板')">编辑</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增角色模态框 -->
+  <div class="modal" id="addRoleModal">
+    <div class="modal-content">
+      <h3 class="modal-title">新增角色</h3>
+      <div class="form-group">
+        <label class="form-label">角色名称</label>
+        <input type="text" class="form-input" id="roleName" placeholder="请输入角色名称">
+      </div>
+      <div class="form-group">
+        <label class="form-label">角色描述</label>
+        <input type="text" class="form-input" id="roleDesc" placeholder="请输入角色描述">
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeAddRoleModal()">取消</button>
+        <button class="btn-full primary" onclick="saveAddRole()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑角色模态框 -->
+  <div class="modal" id="editRoleModal">
+    <div class="modal-content">
+      <h3 class="modal-title">编辑角色</h3>
+      <div class="form-group">
+        <label class="form-label">角色名称</label>
+        <input type="text" class="form-input" id="editRoleName">
+      </div>
+      <div class="form-group">
+        <label class="form-label">角色描述</label>
+        <input type="text" class="form-input" id="editRoleDesc">
+      </div>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closeEditRoleModal()">取消</button>
+        <button class="btn-full primary" onclick="saveEditRole()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 切换标签页
+    function switchTab(tabName) {
+      const tabs = document.querySelectorAll('.tab-item');
+      tabs.forEach(tab => tab.classList.remove('active'));
+      
+      const activeTab = Array.from(tabs).find(tab => tab.textContent.includes(tabName === 'users' ? '用户' : '角色'));
+      if (activeTab) activeTab.classList.add('active');
+      
+      // 显示/隐藏对应区域
+      const userSection = document.querySelector('.action-bar');
+      const tableSection = document.querySelector('.table-section');
+      const roleSection = document.querySelector('.roles-section');
+      
+      if (tabName === 'users') {
+        userSection.style.display = 'flex';
+        tableSection.style.display = 'block';
+        if (roleSection) roleSection.style.display = 'none';
+      } else {
+        userSection.style.display = 'none';
+        tableSection.style.display = 'none';
+        if (roleSection) roleSection.style.display = 'block';
+      }
+    }
+
+    // 打开新增用户模态框
+    function openAddUserModal() {
+      document.getElementById('addUserModal').classList.add('active');
+      // 清空表单
+      document.querySelectorAll('#addUserModal .form-input').forEach(input => input.value = '');
+      document.querySelector('#addUserModal .select-box').value = '跟单员';
+    }
+
+    // 关闭新增用户模态框
+    function closeAddUserModal() {
+      document.getElementById('addUserModal').classList.remove('active');
+    }
+
+    // 保存新增用户
+    function saveAddUser() {
+      const username = document.querySelector('#addUserModal .form-input[type="text"]').value;
+      const password = document.querySelector('#addUserModal .form-input[type="password"]').value;
+      const role = document.querySelector('#addUserModal .select-box').value;
+      
+      if (!username.trim()) {
+        alert('请输入用户名');
+        return;
+      }
+      if (!password) {
+        alert('请输入密码');
+        return;
+      }
+      if (password.length < 6) {
+        alert('密码长度至少6位');
+        return;
+      }
+      
+      // 保存到 localStorage
+      let users = JSON.parse(localStorage.getItem('adminUsers') || '[]');
+      users.push({
+        username,
+        password: btoa(password), // 简单加密
+        role,
+        lastLogin: new Date().toLocaleString(),
+        status: '启用'
+      });
+      localStorage.setItem('adminUsers', JSON.stringify(users));
+      
+      alert('✅ 用户新增成功！');
+      closeAddUserModal();
+      refreshUserList();
+    }
+
+    // 打开编辑用户模态框
+    function openEditUserModal(userId) {
+      document.getElementById('editUserModal').classList.add('active');
+      const modal = document.getElementById('editUserModal');
+      modal.dataset.userid = userId;
+
+      // 从全局列表或 localStorage 查找用户
+      const user = usersList.find(u => (u.id || u.email) === userId)
+        || JSON.parse(localStorage.getItem('adminUsers') || '[]').find(u => (u.id || u.email) === userId);
+
+      if (user) {
+        document.querySelector('#editUserModal .form-input').value = user.name || user.username || user.email;
+        document.getElementById('editRoleSelect').value = user.role || '外贸业务员';
+      }
+    }
+
+    // 关闭编辑用户模态框
+    function closeEditUserModal() {
+      document.getElementById('editUserModal').classList.remove('active');
+    }
+
+    // 保存编辑用户
+    async function saveEditUser() {
+      const modal = document.getElementById('editUserModal');
+      const userId = modal.dataset.userid;
+      const role = document.getElementById('editRoleSelect').value;
+
+      if (!role) { alert('请选择角色'); return; }
+
+      // 更新到 Supabase
+      if (window.DataService && userId) {
+        await DataService.users.updateRole(userId, role);
+      }
+      // 同步更新 localStorage
+      let users = JSON.parse(localStorage.getItem('adminUsers') || '[]');
+      const idx = users.findIndex(u => (u.id || u.email) === userId);
+      if (idx !== -1) { users[idx].role = role; localStorage.setItem('adminUsers', JSON.stringify(users)); }
+
+      if (typeof Toast !== 'undefined') Toast.success('角色已更新！重新登录后生效');
+      else alert('✅ 角色已更新！');
+      closeEditUserModal();
+      refreshUserList();
+    }
+
+    // 删除用户
+    function deleteUser(userId) {
+      if (!confirm('确定要删除该用户吗？此操作不可恢复。')) return;
+      // 从 localStorage 删除
+      let localUsers = JSON.parse(localStorage.getItem('adminUsers') || '[]');
+      localUsers = localUsers.filter(u => (u.id || u.email) !== userId);
+      localStorage.setItem('adminUsers', JSON.stringify(localUsers));
+
+      alert('✅ 用户删除成功！');
+      refreshUserList();
+    }
+
+    // ====== 初始化 ======
+    if (window.Permission && !Permission.canManageUsers()) {
+      document.body.innerHTML = '<div style="text-align:center;padding:80px 20px"><i class="fas fa-lock" style="font-size:48px;color:#ef4444"></i><p style="font-size:16px;color:#6b7280;margin-top:16px">您没有权限访问此页面</p><button onclick="history.back()" style="margin-top:12px;padding:10px 24px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer">返回</button></div>';
+    }
+
+    let usersList = [];
+
+    async function refreshUserList() {
+      const tbody = document.querySelector('#userTableBody');
+      const tableInfo = document.querySelector('.table-info');
+
+      // 从 Supabase 加载
+      if (window.DataService) {
+        try {
+          const { data } = await DataService.users.list();
+          if (data && data.length > 0) { usersList = data; }
+        } catch(e) { console.warn('加载用户失败:', e.message); }
+      }
+
+      // 合并本地用户
+      const localUsers = JSON.parse(localStorage.getItem('adminUsers') || '[]');
+      localUsers.forEach(u => { if (!usersList.find(x => x.email === u.email)) usersList.push(u); });
+
+      if (tableInfo) tableInfo.textContent = `共 ${usersList.length} 个用户`;
+
+      if (tbody) {
+        tbody.innerHTML = '';
+        if (usersList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6b7280;padding:20px">暂无用户</td></tr>';
+          return;
+        }
+        usersList.forEach(user => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${user.name || user.username || user.email}</td>
+            <td><span class="role-badge">${user.role || '外贸业务员'}</span></td>
+            <td>${user.lastLogin || user.created_at ? new Date(user.created_at).toLocaleDateString() : '未登录过'}</td>
+            <td><span class="status-badge ${user.is_active !== false ? 'active' : 'inactive'}">${user.is_active !== false ? '启用' : '禁用'}</span></td>
+            <td><div class="action-icons">
+              <div class="action-icon edit" onclick="openEditUserModal('${user.id || user.email}')"><i class="fas fa-edit"></i></div>
+              <div class="action-icon delete" onclick="deleteUser('${user.id || user.email}')"><i class="fas fa-trash"></i></div>
+            </div></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    // 页面加载时初始化用户列表
+    document.addEventListener('DOMContentLoaded', function() {
+      refreshUserList();
+    });
+
+    // 打开新增角色模态框
+    function openAddRoleModal() {
+      document.getElementById('addRoleModal').classList.add('active');
+      document.getElementById('roleName').value = '';
+      document.getElementById('roleDesc').value = '';
+    }
+
+    // 关闭新增角色模态框
+    function closeAddRoleModal() {
+      document.getElementById('addRoleModal').classList.remove('active');
+    }
+
+    // 保存新增角色
+    function saveAddRole() {
+      const roleName = document.getElementById('roleName').value.trim();
+      const roleDesc = document.getElementById('roleDesc').value.trim();
+      
+      if (!roleName) {
+        alert('请输入角色名称');
+        return;
+      }
+      
+      let roles = JSON.parse(localStorage.getItem('adminRoles') || '[]');
+      roles.push({ name: roleName, description: roleDesc });
+      localStorage.setItem('adminRoles', JSON.stringify(roles));
+      
+      alert('✅ 角色新增成功！');
+      closeAddRoleModal();
+    }
+
+    // 打开编辑角色模态框
+    function openEditRoleModal(roleName) {
+      document.getElementById('editRoleModal').classList.add('active');
+      document.getElementById('editRoleModal').dataset.roleName = roleName;
+      
+      // 从localStorage获取角色信息
+      const roles = JSON.parse(localStorage.getItem('adminRoles') || '[]');
+      const role = roles.find(r => r.name === roleName);
+      
+      if (role) {
+        document.getElementById('editRoleName').value = role.name;
+        document.getElementById('editRoleDesc').value = role.description || '';
+      } else {
+        // 如果localStorage中没有，使用默认值
+        document.getElementById('editRoleName').value = roleName;
+        document.getElementById('editRoleDesc').value = '';
+      }
+    }
+
+    // 关闭编辑角色模态框
+    function closeEditRoleModal() {
+      document.getElementById('editRoleModal').classList.remove('active');
+    }
+
+    // 保存编辑角色
+    function saveEditRole() {
+      const modal = document.getElementById('editRoleModal');
+      const oldRoleName = modal.dataset.roleName;
+      
+      const roleName = document.getElementById('editRoleName').value.trim();
+      const roleDesc = document.getElementById('editRoleDesc').value.trim();
+      
+      if (!roleName) {
+        alert('请输入角色名称');
+        return;
+      }
+      
+      let roles = JSON.parse(localStorage.getItem('adminRoles') || '[]');
+      const index = roles.findIndex(r => r.name === oldRoleName);
+      if (index !== -1) {
+        roles[index] = { name: roleName, description: roleDesc };
+      } else {
+        roles.push({ name: roleName, description: roleDesc });
+      }
+      localStorage.setItem('adminRoles', JSON.stringify(roles));
+      
+      alert('✅ 角色信息更新成功！');
+      closeEditRoleModal();
+    }
+  </script>
+</body>
+</html>

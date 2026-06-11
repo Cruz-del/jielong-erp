@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>计划单生成 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    :root{--bg:#eef0f4;--card:#fff;--text:#1e293b;--text2:#64748b;--border:#e8ecf1;--accent:#2563eb;--success:#10b981;--shadow:0 1px 2px rgba(0,0,0,.03),0 2px 8px rgba(0,0,0,.04)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);min-height:100vh;padding-bottom:20px;-webkit-font-smoothing:antialiased}
+    .header{background:linear-gradient(155deg,#0f2744,#1b3d62 40%,#1e4d7b);padding:16px;color:#fff;display:flex;align-items:center;gap:12px}
+    .back-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;color:#fff}
+    .header-title{font-size:17px;font-weight:700;margin:0}
+    .header-subtitle{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px}
+
+    .steps-bar{background:var(--card);padding:14px;display:flex;justify-content:space-between;position:relative;box-shadow:var(--shadow);margin-bottom:12px}
+    .steps-bar::before{content:'';position:absolute;top:26px;left:12%;right:12%;height:2px;background:var(--border)}
+    .step-item{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+    .step-num{width:28px;height:28px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:4px;border:2px solid var(--border);transition:all .3s}
+    .step-item.active .step-num{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+    .step-item.done .step-num{background:var(--success);border-color:var(--success);color:#fff}
+    .step-label{font-size:10px;color:var(--text2);text-align:center}
+    .step-item.active .step-label,.step-item.done .step-label{color:var(--text);font-weight:600}
+
+    .form-card{background:var(--card);margin:0 14px 12px;border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+    .form-title{font-size:15px;font-weight:700;color:var(--text);margin:0 0 16px 0;display:flex;align-items:center;gap:8px}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-group{margin-bottom:14px}
+    .form-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;display:block}
+    .form-input,.form-select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:#f8fafc;outline:none;transition:all .2s;font-family:inherit}
+    .form-input:focus,.form-select:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+    .form-textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:#f8fafc;resize:none;height:80px;font-family:inherit;outline:none}
+    .pl-preview{background:linear-gradient(135deg,#eff4ff,#dbeafe);padding:14px 18px;border-radius:10px;display:flex;align-items:center;gap:10px;margin-top:12px}
+    .pl-num{font-size:18px;font-weight:800;color:var(--accent);letter-spacing:.5px}
+    .pl-hint{font-size:11px;color:var(--text2)}
+    .btn-row{display:flex;gap:10px;margin:0 14px 12px}
+    .btn{flex:1;padding:14px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.2)}
+    .btn-secondary{background:var(--card);color:var(--text);border:1.5px solid var(--border)}
+    .btn-success{background:var(--success);color:#fff;box-shadow:0 2px 10px rgba(16,185,129,.2)}
+
+    .ai-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:6px;font-size:11px;font-weight:600;color:#7c3aed}
+    .success-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:999;display:none}
+    .success-overlay.show{display:flex}
+    .success-card{background:#fff;border-radius:18px;padding:32px 24px;text-align:center;width:90%;max-width:320px}
+    .success-icon{width:64px;height:64px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;color:var(--success)}
+    .success-msg{font-size:17px;font-weight:700;color:var(--text);margin:0 0 8px 0}
+    .success-pl{font-size:14px;color:var(--accent);font-weight:700;margin:0 0 20px 0}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+  <div><h1 class="header-title">新建计划单</h1><p class="header-subtitle">节点 01-02：客户询价 → 计划单</p></div>
+</div>
+
+<!-- Step Indicator -->
+<div class="steps-bar">
+  <div class="step-item active" id="step1"><div class="step-num">1</div><span class="step-label">询价信息</span></div>
+  <div class="step-item" id="step2"><div class="step-num">2</div><span class="step-label">产品细节</span></div>
+  <div class="step-item" id="step3"><div class="step-num">3</div><span class="step-label">生产信息</span></div>
+  <div class="step-item" id="step4"><div class="step-num">4</div><span class="step-label">确认提交</span></div>
+</div>
+
+<!-- Step 1: 询价信息 (Customer + Basic Info) -->
+<div class="form-card" id="card1">
+  <h3 class="form-title"><span class="ai-badge"><i class="fas fa-robot"></i> AI 辅助</span> 客户询价信息</h3>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">客户名称 *</label><input class="form-input" id="customerName" placeholder="输入客户公司名"></div>
+    <div class="form-group"><label class="form-label">客户邮箱</label><input class="form-input" id="customerEmail" placeholder="contact@example.com"></div>
+  </div>
+  <div class="form-group"><label class="form-label">目标单价 (可选)</label><input class="form-input" id="targetPrice" placeholder="如 2.50 USD/m"></div>
+</div>
+
+<!-- Step 2: 产品细节 -->
+<div class="form-card" id="card2" style="display:none">
+  <h3 class="form-title">🎨 花型与产品细节</h3>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">花型名称 *</label><input class="form-input" id="designPattern" placeholder="如 花卉系列 HX-2026"></div>
+    <div class="form-group"><label class="form-label">花型编号</label><input class="form-input" id="designCode" placeholder="如 HX-2026-001"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">数量 *</label><input class="form-input" id="quantity" type="number" placeholder="0" oninput="updatePreview()"></div>
+    <div class="form-group"><label class="form-label">单位</label><select class="form-select" id="unit"><option>m</option><option>yd</option><option>kg</option><option>pcs</option></select></div>
+  </div>
+  <div class="form-group"><label class="form-label">备注</label><textarea class="form-textarea" id="notes" placeholder="特殊工艺要求、颜色、材质等"></textarea></div>
+</div>
+
+<!-- Step 3: 生产信息 -->
+<div class="form-card" id="card3" style="display:none">
+  <h3 class="form-title">🏭 生产分配</h3>
+  <div class="form-group"><label class="form-label">工厂选择</label><select class="form-select" id="factorySelect"><option value="">请选择工厂</option></select></div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label">预计交期</label><input class="form-input" id="deliveryDate" type="date"></div>
+    <div class="form-group"><label class="form-label">币种</label><select class="form-select" id="currency"><option>USD</option><option>EUR</option><option>CNY</option></select></div>
+  </div>
+</div>
+
+<!-- Step 4: 确认提交 -->
+<div class="form-card" id="card4" style="display:none">
+  <h3 class="form-title">✅ 订单信息确认</h3>
+  <div id="summaryContent" style="font-size:13px;color:var(--text2);line-height:2">
+    <div>客户：<strong id="confCustomer" style="color:var(--text)">—</strong></div>
+    <div>花型：<strong id="confPattern" style="color:var(--text)">—</strong></div>
+    <div>数量：<strong id="confQty" style="color:var(--text)">—</strong></div>
+    <div>工厂：<strong id="confFactory" style="color:var(--text)">—</strong></div>
+    <div>交期：<strong id="confDelivery" style="color:var(--text)">—</strong></div>
+  </div>
+  <div class="pl-preview">
+    <i class="fas fa-hashtag" style="color:var(--accent);font-size:18px"></i>
+    <div><div class="pl-num" id="plPreview">PL-2026-0001</div><div class="pl-hint">系统自动生成唯一编号</div></div>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="btn-row">
+  <button class="btn btn-secondary" id="btnCancel" onclick="cancelOrder()"><i class="fas fa-times"></i> 取消</button>
+  <button class="btn btn-secondary" id="btnPrev" onclick="prevStep()" style="display:none"><i class="fas fa-arrow-left"></i> 上一步</button>
+  <button class="btn btn-primary" id="btnNext" onclick="nextStep()">下一步 <i class="fas fa-arrow-right"></i></button>
+  <button class="btn btn-success" id="btnSubmit" onclick="submitOrder()" style="display:none"><i class="fas fa-check-circle"></i> 确认提交</button>
+</div>
+
+<!-- Success Overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+    <p class="success-msg">计划单创建成功！</p>
+    <p class="success-pl" id="successPL">PL-2026-0001</p>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:20px">已自动进入节点 [03] 设计确认</p>
+    <button class="btn btn-primary" onclick="viewOrder()"><i class="fas fa-eye"></i> 查看订单详情</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="closeSuccess()">返回工作台</button>
+  </div>
+</div>
+
+<script>
+let currentStep = 1;
+let createdOrderId = null;
+
+function plNumber() { const y=new Date().getFullYear(); const n=String(Math.floor(Math.random()*9000)+1000); return `PL-${y}-${n}`; }
+
+function showStep(n) {
+  document.querySelectorAll('.form-card').forEach(c=>c.style.display='none');
+  const card = document.getElementById('card'+n); if(card) card.style.display='block';
+  document.querySelectorAll('.step-item').forEach((s,i)=>{s.classList.remove('active','done');if(i+1<n)s.classList.add('done');if(i+1===n)s.classList.add('active')});
+  document.getElementById('btnPrev').style.display = n>1?'':'none';
+  document.getElementById('btnNext').style.display = n<4?'':'none';
+  document.getElementById('btnSubmit').style.display = n===4?'':'none';
+  currentStep = n;
+}
+
+function nextStep() {
+  if (currentStep===1){if(!document.getElementById('customerName').value.trim()){Toast.warning('请输入客户名称');return}}
+  if (currentStep===2){if(!document.getElementById('designPattern').value.trim()||!document.getElementById('quantity').value){Toast.warning('请填写花型和数量');return}}
+  if (currentStep<4) showStep(currentStep+1);
+  if (currentStep===4) updateConfirmation();
+}
+
+function prevStep() { if (currentStep>1) showStep(currentStep-1); }
+
+function cancelOrder() {
+  const hasData = document.getElementById('customerName').value.trim()
+    || document.getElementById('designPattern').value.trim()
+    || document.getElementById('quantity').value;
+  if (hasData) {
+    if (typeof ConfirmModal !== 'undefined') {
+      ConfirmModal.show({
+        title: '确认取消', message: '取消后已填写的数据将丢失，确定要取消吗？',
+        confirmText: '确定取消', cancelText: '继续编辑', type: 'warning',
+        onConfirm: () => { goBack(); }
+      });
+    } else {
+      if (confirm('确定取消？已填写的数据将丢失。')) goBack();
+    }
+  } else {
+    goBack();
+  }
+}
+
+function goBack() {
+  if (window.parent && typeof window.parent.loadPage === 'function') {
+    window.parent.loadPage('pages/dashboard.html');
+  } else { history.back(); }
+}
+
+function updatePreview() {
+  const q=document.getElementById('quantity').value||'0';
+  const u=document.getElementById('unit').value||'m';
+  const p=document.getElementById('targetPrice').value;
+}
+
+function updateConfirmation() {
+  document.getElementById('confCustomer').textContent = document.getElementById('customerName').value||'—';
+  document.getElementById('confPattern').textContent = document.getElementById('designPattern').value||'—';
+  document.getElementById('confQty').textContent = (document.getElementById('quantity').value||'0')+' '+(document.getElementById('unit').value||'m');
+  document.getElementById('confFactory').textContent = document.getElementById('factorySelect').value||'—';
+  document.getElementById('confDelivery').textContent = document.getElementById('deliveryDate').value||'—';
+  document.getElementById('plPreview').textContent = plNumber();
+}
+
+async function submitOrder() {
+  const data = {
+    customer_name: document.getElementById('customerName').value.trim(),
+    design_pattern: document.getElementById('designPattern').value.trim(),
+    design_code: document.getElementById('designCode').value.trim(),
+    quantity: parseFloat(document.getElementById('quantity').value)||0,
+    unit: document.getElementById('unit').value,
+    price: parseFloat(document.getElementById('targetPrice').value)||null,
+    currency: document.getElementById('currency').value,
+    delivery_date: document.getElementById('deliveryDate').value||null,
+    factory_name: document.getElementById('factorySelect').value,
+    notes: document.getElementById('notes').value
+  };
+
+  Loading.show('正在生成计划单...');
+  try {
+    if (window.DataService) {
+      const { data:order, error } = await DataService.orders.create(data);
+      if (order) {
+        createdOrderId = order.id;
+        document.getElementById('successPL').textContent = order.pl_number;
+        // Auto-create first task: 设计确认
+        await DataService.tasks.create({
+          title: `[03] 设计确认 - ${order.pl_number}`,
+          description: `订单 ${order.pl_number} 计划单已生成，请上传设计稿并发送客户确认`,
+          order_id: order.id,
+          priority: 'high'
+        });
+        document.getElementById('successOverlay').classList.add('show');
+        Loading.hide();
+        return;
+      }
+    }
+    // Fallback
+    const localData = {...data, id:'local_'+Date.now(), pl_number:plNumber(), status:'设计', progress:0};
+    const orders = JSON.parse(localStorage.getItem('orders')||'[]');
+    orders.unshift(localData);
+    localStorage.setItem('orders', JSON.stringify(orders));
+    createdOrderId = localData.id;
+    document.getElementById('successPL').textContent = localData.pl_number;
+    document.getElementById('successOverlay').classList.add('show');
+    Loading.hide();
+  } catch(e) {
+    Loading.hide();
+    Toast.error('创建失败: '+e.message);
+  }
+}
+
+function viewOrder() {
+  document.getElementById('successOverlay').classList.remove('show');
+  if (window.parent&&typeof window.parent.loadPage==='function') {
+    window.parent.loadPage('pages/order-detail.html?id='+(createdOrderId||''));
+  }
+}
+function closeSuccess() {
+  document.getElementById('successOverlay').classList.remove('show');
+  if (window.parent&&typeof window.parent.loadPage==='function') {
+    window.parent.loadPage('pages/dashboard.html');
+  }
+}
+
+// Load factories
+async function loadFactories() {
+  if (!window.DataService) return;
+  const {data} = await DataService.factories.list();
+  const sel = document.getElementById('factorySelect');
+  if (data) data.forEach(f=>{const o=document.createElement('option');o.value=f.name;o.textContent=f.name+(f.rating?' ★'+f.rating:'');sel.appendChild(o)});
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{showStep(1);loadFactories();updatePreview();plNumber();});
+</script>
+</body>
+</html>

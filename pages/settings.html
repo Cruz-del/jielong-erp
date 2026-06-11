@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设置中心 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/user.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .tabs-section {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #f3f4f6;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .tab-item {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    .tab-item.active {
+      background: #3b82f6;
+      color: white;
+    }
+    .tab-item:not(.active) {
+      color: #6b7280;
+    }
+    .content-section {
+      display: none;
+      padding: 16px;
+    }
+    .content-section.active {
+      display: block;
+    }
+    .form-section {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .select-box {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: white;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f3f4f6;
+      margin-bottom: 20px;
+    }
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .profile-info {
+      flex: 1;
+    }
+    .profile-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .profile-role {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .toggle-row:last-child {
+      border-bottom: none;
+    }
+    .toggle-info {
+      flex: 1;
+    }
+    .toggle-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1f2937;
+      margin: 0 0 4px 0;
+    }
+    .toggle-desc {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .toggle-switch {
+      width: 44px;
+      height: 24px;
+      background: #e5e7eb;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+    }
+    .toggle-switch.active {
+      background: #3b82f6;
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: all 0.3s;
+    }
+    .toggle-switch.active::after {
+      left: 23px;
+    }
+    .menu-link {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .menu-link:hover {
+      background: #f9fafb;
+    }
+    .menu-link i {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #3b82f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+    }
+    .menu-link span {
+      flex: 1;
+      font-size: 14px;
+      color: #374151;
+    }
+    .menu-link .arrow {
+      color: #9ca3af;
+    }
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: white;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #6b7280;
+      transition: all 0.3s;
+    }
+    .nav-item.active, .nav-item:hover {
+      color: #3b82f6;
+    }
+    .nav-item i {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .nav-item span {
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="back-btn" onclick="goBack()">
+      <i class="fas fa-arrow-left"></i>
+    </div>
+    <h1 class="header-title">设置中心</h1>
+  </div>
+
+  <div class="tabs-section">
+    <div class="tab-item active" onclick="switchTab('personal')">个人设置</div>
+    <div class="tab-item" onclick="switchTab('system')">系统设置</div>
+  </div>
+
+  <!-- 个人设置 -->
+  <div id="personal" class="content-section active">
+    <div class="form-section">
+      <div class="profile-header">
+        <div class="avatar" id="avatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="profile-info">
+          <div class="profile-name" id="userName">用户名</div>
+          <div class="profile-role" id="userRole">角色</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">姓名</label>
+        <input type="text" class="form-input" id="name" placeholder="请输入姓名">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">邮箱</label>
+        <input type="email" class="form-input" id="email" placeholder="请输入邮箱">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">手机号码</label>
+        <input type="tel" class="form-input" id="phone" placeholder="请输入手机号码">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">修改密码</label>
+        <input type="password" class="form-input" id="password" placeholder="请输入新密码（如不修改请留空）">
+      </div>
+
+      <button class="btn-primary" onclick="saveProfile()">保存修改</button>
+    </div>
+
+    <div class="menu-link" onclick="navigateTo('history.html')">
+      <i class="fas fa-history"></i>
+      <span>操作记录</span>
+      <i class="fas fa-chevron-right arrow"></i>
+    </div>
+
+    <div class="menu-link" onclick="navigateTo('help.html')">
+      <i class="fas fa-help-circle"></i>
+      <span>帮助中心</span>
+      <i class="fas fa-chevron-right arrow"></i>
+    </div>
+
+    <div class="menu-link" onclick="navigateTo('about.html')">
+      <i class="fas fa-info-circle"></i>
+      <span>关于我们</span>
+      <i class="fas fa-chevron-right arrow"></i>
+    </div>
+
+    <div class="menu-link logout-btn" onclick="handleLogout()">
+      <i class="fas fa-sign-out-alt"></i>
+      <span>退出登录</span>
+      <i class="fas fa-chevron-right arrow"></i>
+    </div>
+  </div>
+
+  <!-- 系统设置 -->
+  <div id="system" class="content-section">
+    <div class="form-section">
+      <div class="section-title">通用设置</div>
+      
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">推送通知</div>
+          <div class="toggle-desc">接收系统消息推送</div>
+        </div>
+        <div class="toggle-switch active" onclick="toggleSwitch(this)"></div>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">声音提示</div>
+          <div class="toggle-desc">操作时播放提示音</div>
+        </div>
+        <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">深色模式</div>
+          <div class="toggle-desc">切换深色/浅色主题</div>
+        </div>
+        <div class="toggle-switch" onclick="toggleSwitch(this)"></div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">数据管理</div>
+      
+      <div class="menu-link" onclick="clearCache()">
+        <i class="fas fa-trash"></i>
+        <span>清除缓存</span>
+        <i class="fas fa-chevron-right arrow"></i>
+      </div>
+
+      <div class="menu-link" onclick="exportData()">
+        <i class="fas fa-download"></i>
+        <span>导出数据</span>
+        <i class="fas fa-chevron-right arrow"></i>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">系统信息</div>
+      <div style="font-size: 13px; color: #6b7280; line-height: 1.8;">
+        <div>系统版本：v1.0.0</div>
+        <div>更新时间：2026-06-08</div>
+        <div>技术支持：捷隆纺织技术部</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航由外壳统一提供 -->
+  <script>
+    function goBack() {
+      window.history.back();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-item').forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.content-section').forEach(item => item.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function toggleSwitch(element) {
+      element.classList.toggle('active');
+    }
+
+    function saveProfile() {
+      // 获取表单数据
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+      
+      // 验证必填项
+      if (!name) {
+        showToast('请输入姓名', 'error');
+        return;
+      }
+      
+      // 获取当前用户信息
+      let currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      
+      // 更新用户信息
+      currentUser.username = name;
+      currentUser.email = email || currentUser.email;
+      currentUser.phone = phone;
+      
+      // 如果修改了密码
+      if (password) {
+        if (password.length < 6) {
+          showToast('密码长度不能少于6位', 'error');
+          return;
+        }
+        currentUser.password = password;
+      }
+      
+      // 保存到 localStorage
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      // 尝试同步到 Supabase
+      if (window.SupabaseClient) {
+        const supabase = SupabaseClient.getInstance();
+        if (supabase && currentUser.id) {
+          supabase.from('users').update({
+            name: name,
+            email: email,
+            phone: phone,
+            updated_at: new Date().toISOString()
+          }).eq('id', currentUser.id).then(({ error }) => {
+            if (error) {
+              console.warn('⚠️ 同步到云端失败:', error.message);
+            } else {
+              console.log('✅ 用户信息已同步到云端');
+            }
+          });
+        }
+      }
+      
+      // 通知父页面更新用户信息
+      if (window.parent && window.parent.postMessage) {
+        window.parent.postMessage({
+          type: 'userUpdated',
+          user: currentUser
+        }, '*');
+      }
+      
+      // 显示成功提示
+      showToast('保存成功！', 'success');
+      
+      // 更新页面显示
+      document.getElementById('userName').textContent = name;
+      
+      // 清空密码字段
+      document.getElementById('password').value = '';
+    }
+    
+    // 显示提示信息
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 2000);
+    }
+
+    function handleLogout() {
+      if (confirm('确定要退出登录吗？')) {
+        // 清除本地存储
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('currentUser');
+        
+        // 尝试退出 Supabase 登录
+        if (window.SupabaseClient) {
+          SupabaseClient.signOut().catch(() => {});
+        }
+        
+        // 通知父页面退出
+        if (window.parent && window.parent.postMessage) {
+          window.parent.postMessage({ type: 'logout' }, '*');
+        }
+        
+        // 跳转到登录页
+        window.location.href = 'pages/login.html';
+      }
+    }
+
+    function clearCache() {
+      if (confirm('确定要清除缓存吗？')) {
+        localStorage.clear();
+        alert('缓存已清除！');
+      }
+    }
+
+    function exportData() {
+      alert('数据导出功能开发中...');
+    }
+
+    function navigateTo(page) {
+      window.location.href = page;
+    }
+
+    window.onload = function() {
+      const user = localStorage.getItem('currentUser');
+      if (user) {
+        const userData = JSON.parse(user);
+        document.getElementById('userName').textContent = userData.username || userData.name || '员工';
+        document.getElementById('userRole').textContent = userData.role || '用户';
+        document.getElementById('name').value = userData.username || userData.name || '';
+        document.getElementById('email').value = userData.email || '';
+        document.getElementById('phone').value = userData.phone || '';
+        document.getElementById('avatar').innerHTML = `<i class="fas fa-user"></i>`;
+      }
+    };
+  </script>
+</body>
+</html>

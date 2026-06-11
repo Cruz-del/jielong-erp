@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>财务管理 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .stats-bar {
+      background: white;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 12px;
+      border-radius: 12px;
+    }
+    .stat-card {
+      text-align: center;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 10px;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .stat-card.warning .stat-value {
+      color: #dc2626;
+    }
+    .stat-card.success .stat-value {
+      color: #10b981;
+    }
+    .stat-card.info .stat-value {
+      color: #3b82f6;
+    }
+    .menu-section {
+      margin: 12px;
+    }
+    .menu-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 12px;
+      padding-left: 8px;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .menu-card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .menu-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .menu-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+    }
+    .menu-icon.ar {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+    .menu-icon.profit {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+    .menu-icon.reconcile {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .menu-icon.rate {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+    .menu-icon.payment {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+    }
+    .menu-icon.overseas {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+    }
+    .menu-icon.risk {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+    .menu-icon.export {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+    }
+    .menu-title-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .menu-desc {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 16px;
+      cursor: pointer;
+      color: #6b7280;
+      transition: color 0.2s;
+    }
+    .nav-item.active {
+      color: #3b82f6;
+    }
+    .nav-item i {
+      font-size: 20px;
+    }
+    .nav-item span {
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">财务管理</h1>
+    <p class="header-subtitle">财务数据总览</p>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card warning">
+      <p class="stat-value">¥128万</p>
+      <p class="stat-label">应收账款</p>
+    </div>
+    <div class="stat-card success">
+      <p class="stat-value">¥35万</p>
+      <p class="stat-label">本月利润</p>
+    </div>
+    <div class="stat-card info">
+      <p class="stat-value">6.92%</p>
+      <p class="stat-label">利润率</p>
+    </div>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-title">财务模块</div>
+    <div class="menu-grid">
+      <div class="menu-card" onclick="navigateTo('finance-ar.html')">
+        <div class="menu-icon ar">
+          <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <span class="menu-title-text">应收账款</span>
+        <span class="menu-desc">管理客户欠款</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('finance-profit.html')">
+        <div class="menu-icon profit">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <span class="menu-title-text">利润分析</span>
+        <span class="menu-desc">查看盈利情况</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('finance-reconcile.html')">
+        <div class="menu-icon reconcile">
+          <i class="fas fa-balance-scale"></i>
+        </div>
+        <span class="menu-title-text">智能对账</span>
+        <span class="menu-desc">自动核销回款</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('finance-rate.html')">
+        <div class="menu-icon rate">
+          <i class="fas fa-exchange-alt"></i>
+        </div>
+        <span class="menu-title-text">汇率管理</span>
+        <span class="menu-desc">查看实时汇率</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('finance-payment.html')">
+        <div class="menu-icon payment">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <span class="menu-title-text">付款管理</span>
+        <span class="menu-desc">管理供应商付款</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('finance-overseas.html')">
+        <div class="menu-icon overseas">
+          <i class="fas fa-globe"></i>
+        </div>
+        <span class="menu-title-text">跨境结算</span>
+        <span class="menu-desc">处理外汇业务</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('finance-risk.html')">
+        <div class="menu-icon risk">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <span class="menu-title-text">风险预警</span>
+        <span class="menu-desc">监控财务风险</span>
+      </div>
+      <div class="menu-card" onclick="handleExport()">
+        <div class="menu-icon export">
+          <i class="fas fa-download"></i>
+        </div>
+        <span class="menu-title-text">数据导出</span>
+        <span class="menu-desc">导出财务报表</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航由外壳统一提供 -->
+  <script>
+    function navigateTo(page) {
+      window.location.href = page;
+    }
+
+    function handleExport() {
+      alert('正在导出财务报表...');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>关于我们 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 16px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .back-btn {
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .back-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .content {
+      padding: 16px;
+    }
+    .brand-section {
+      text-align: center;
+      padding: 24px 0;
+    }
+    .brand-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 700;
+      color: white;
+      margin: 0 auto 16px;
+    }
+    .brand-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+    .brand-slogan {
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .info-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .info-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-content {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.6;
+    }
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .feature-item {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+      margin: 0 auto 8px;
+    }
+    .feature-icon.order {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+    .feature-icon.finance {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+    .feature-icon.safe {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .feature-icon.mobile {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+    .feature-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #1f2937;
+      margin-bottom: 2px;
+    }
+    .feature-desc {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .contact-info {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .contact-item:last-child {
+      border-bottom: none;
+    }
+    .contact-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+    }
+    .contact-content {
+      flex: 1;
+    }
+    .contact-label {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 2px;
+    }
+    .contact-value {
+      font-size: 14px;
+      color: #1f2937;
+    }
+    .version-info {
+      text-align: center;
+      padding: 20px 0;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 16px;
+      cursor: pointer;
+      color: #6b7280;
+      transition: color 0.2s;
+    }
+    .nav-item.active {
+      color: #3b82f6;
+    }
+    .nav-item i {
+      font-size: 20px;
+    }
+    .nav-item span {
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="back-btn" onclick="goBack()">
+      <i class="fas fa-chevron-left"></i>
+    </div>
+    <h1>关于我们</h1>
+  </div>
+
+  <div class="content">
+    <div class="brand-section">
+      <div class="brand-logo">JL</div>
+      <div class="brand-name">捷隆纺织</div>
+      <div class="brand-slogan">专注纺织外贸，助力企业成长</div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-title">
+        <i class="fas fa-info-circle"></i>
+        公司简介
+      </div>
+      <div class="info-content">
+        捷隆纺织成立于2005年，是一家专业从事纺织品进出口贸易的企业。我们致力于为全球客户提供高品质的纺织产品和优质的服务体验。
+      </div>
+    </div>
+
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="feature-icon order">
+          <i class="fas fa-file-text"></i>
+        </div>
+        <div class="feature-title">订单管理</div>
+        <div class="feature-desc">全流程跟踪</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon finance">
+          <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="feature-title">财务管理</div>
+        <div class="feature-desc">智能核算</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon safe">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="feature-title">安全可靠</div>
+        <div class="feature-desc">数据加密</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon mobile">
+          <i class="fas fa-mobile-alt"></i>
+        </div>
+        <div class="feature-title">移动办公</div>
+        <div class="feature-desc">随时随地</div>
+      </div>
+    </div>
+
+    <div class="contact-info">
+      <div class="contact-item">
+        <div class="contact-icon">
+          <i class="fas fa-phone"></i>
+        </div>
+        <div class="contact-content">
+          <div class="contact-label">联系电话</div>
+          <div class="contact-value">400-888-8888</div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">
+          <i class="fas fa-envelope"></i>
+        </div>
+        <div class="contact-content">
+          <div class="contact-label">电子邮箱</div>
+          <div class="contact-value">contact@jielong.com</div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon">
+          <i class="fas fa-map-marker-alt"></i>
+        </div>
+        <div class="contact-content">
+          <div class="contact-label">公司地址</div>
+          <div class="contact-value">浙江省杭州市萧山区</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="version-info">
+      版本号：v1.0.0<br>
+      最后更新：2024年1月
+    </div>
+  </div>
+
+  <!-- 底部导航由外壳统一提供 -->
+  <script>
+    function goBack() {
+      window.history.back();
+    }
+    function navigateTo(page) {
+      window.location.href = page;
+    }
+  </script>
+</body>
+</html>

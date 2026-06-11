@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件中心 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/supabase-storage.js"></script>
+  <script src="../js/file-viewer.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .search-bar {
+      background: rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .search-bar i {
+      color: rgba(255,255,255,0.6);
+    }
+    .search-bar input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-bar input::placeholder {
+      color: rgba(255,255,255,0.5);
+    }
+    .toolbar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .action-btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .view-toggle {
+      display: flex;
+      background: #f3f4f6;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .toggle-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+    .toggle-btn.active {
+      background: white;
+      color: #3b82f6;
+    }
+    .tree-section {
+      background: white;
+      padding: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .tree-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      margin: 0 0 12px 0;
+    }
+    .tree-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .tree-item {
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .tree-item:hover {
+      background: #f3f4f6;
+    }
+    .tree-item.active {
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+    .tree-item.folder > i {
+      color: #f59e0b;
+    }
+    .tree-item.file > i {
+      color: #6b7280;
+    }
+    .tree-item.sub {
+      padding-left: 32px;
+    }
+    .file-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .section-info {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      margin: 16px;
+      transition: all 0.3s;
+    }
+    .upload-area:hover {
+      border-color: #3b82f6;
+      background: #f9fafb;
+    }
+    .upload-icon {
+      width: 56px;
+      height: 56px;
+      background: #eff6ff;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .upload-icon i {
+      font-size: 28px;
+      color: #3b82f6;
+    }
+    .upload-text {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .upload-hint {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 16px;
+    }
+    .file-card {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .file-card:hover {
+      transform: translateY(-2px);
+      background: #f3f4f6;
+    }
+    .file-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+    }
+    .file-icon.image {
+      background: #dbeafe;
+    }
+    .file-icon.pdf {
+      background: #fee2e2;
+    }
+    .file-icon.excel {
+      background: #dcfce7;
+    }
+    .file-icon i {
+      font-size: 24px;
+    }
+    .file-icon.image i {
+      color: #3b82f6;
+    }
+    .file-icon.pdf i {
+      color: #dc2626;
+    }
+    .file-icon.excel i {
+      color: #16a34a;
+    }
+    .file-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: #1f2937;
+      text-align: center;
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-date {
+      font-size: 10px;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .context-menu {
+      position: fixed;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      padding: 8px;
+      z-index: 1000;
+      display: none;
+    }
+    .context-menu.active {
+      display: block;
+    }
+    .menu-item {
+      padding: 10px 24px 10px 40px;
+      font-size: 13px;
+      color: #374151;
+      cursor: pointer;
+      border-radius: 6px;
+      position: relative;
+    }
+    .menu-item:hover {
+      background: #f3f4f6;
+    }
+    .menu-item i {
+      position: absolute;
+      left: 12px;
+      color: #6b7280;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1001;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 16px 0;
+    }
+    .permission-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .permission-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #f9fafb;
+    }
+    .permission-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1f2937;
+    }
+    .btn-section {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-full {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-full.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">文件中心</h1>
+    <p class="header-subtitle">按订单归档管理</p>
+    <div class="search-bar">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="搜索文件名或订单号">
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-actions">
+      <button class="action-btn btn-primary">
+        <i class="fas fa-upload"></i> 上传
+      </button>
+      <button class="action-btn btn-secondary" onclick="openPermissionModal()">
+        <i class="fas fa-lock"></i> 权限设置
+      </button>
+    </div>
+    <div class="view-toggle">
+      <button class="toggle-btn active"><i class="fas fa-th-large"></i></button>
+      <button class="toggle-btn"><i class="fas fa-list"></i></button>
+    </div>
+  </div>
+
+  <div class="tree-section">
+    <p class="tree-title">订单目录</p>
+    <ul class="tree-list">
+      <li class="tree-item folder active">
+        <i class="fas fa-folder-open"></i>
+        <span>2026</span>
+      </li>
+      <li class="tree-item folder sub">
+        <i class="fas fa-folder"></i>
+        <span>PL-2026-0001</span>
+      </li>
+      <li class="tree-item sub">
+        <i class="fas fa-chevron-right"></i>
+        <span>设计</span>
+      </li>
+      <li class="tree-item sub">
+        <i class="fas fa-chevron-right"></i>
+        <span>生产</span>
+      </li>
+      <li class="tree-item folder sub">
+        <i class="fas fa-folder"></i>
+        <span>PL-2026-0002</span>
+      </li>
+      <li class="tree-item folder">
+        <i class="fas fa-folder"></i>
+        <span>2025</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="file-section">
+    <div class="section-header">
+      <h3 class="section-title">PL-2026-0001 / 设计</h3>
+      <span class="section-info">共 3 个文件</span>
+    </div>
+    
+    <div class="upload-area">
+      <div class="upload-icon">
+        <i class="fas fa-cloud-upload-alt"></i>
+      </div>
+      <p class="upload-text">拖拽文件到此处上传</p>
+      <p class="upload-hint">支持图片、PDF、Excel等格式</p>
+    </div>
+    
+    <div class="file-grid">
+      <div class="file-card" oncontextmenu="showContextMenu(event)">
+        <div class="file-icon image">
+          <i class="fas fa-image"></i>
+        </div>
+        <p class="file-name">设计稿.jpg</p>
+        <p class="file-date">2026-06-01</p>
+      </div>
+      <div class="file-card" oncontextmenu="showContextMenu(event)">
+        <div class="file-icon pdf">
+          <i class="fas fa-file-pdf"></i>
+        </div>
+        <p class="file-name">设计说明.pdf</p>
+        <p class="file-date">2026-06-01</p>
+      </div>
+      <div class="file-card" oncontextmenu="showContextMenu(event)">
+        <div class="file-icon image">
+          <i class="fas fa-image"></i>
+        </div>
+        <p class="file-name">唛头.png</p>
+        <p class="file-date">2026-06-02</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="context-menu" id="contextMenu">
+    <div class="menu-item"><i class="fas fa-download"></i> 下载</div>
+    <div class="menu-item"><i class="fas fa-trash"></i> 删除</div>
+    <div class="menu-item"><i class="fas fa-move"></i> 移动</div>
+  </div>
+
+  <div class="modal" id="permissionModal">
+    <div class="modal-content">
+      <h3 class="modal-title">权限设置</h3>
+      <ul class="permission-list">
+        <li class="permission-item">
+          <span class="permission-name">跟单员</span>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </li>
+        <li class="permission-item">
+          <span class="permission-name">财务</span>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </li>
+        <li class="permission-item">
+          <span class="permission-name">管理员</span>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </li>
+      </ul>
+      <div class="btn-section">
+        <button class="btn-full secondary" onclick="closePermissionModal()">取消</button>
+        <button class="btn-full primary">保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 文件上传功能
+    function initUpload() {
+      const uploadArea = document.querySelector('.upload-area');
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.multiple = true;
+      fileInput.accept = '.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx';
+      fileInput.style.display = 'none';
+      document.body.appendChild(fileInput);
+      
+      // 点击上传区域触发文件选择
+      uploadArea.addEventListener('click', () => {
+        fileInput.click();
+      });
+      
+      // 文件选择后处理
+      fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+      });
+      
+      // 拖拽上传
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+      
+      uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+      });
+      
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+      });
+    }
+    
+    // 处理上传的文件 → Supabase Storage 优先
+    async function handleFiles(files) {
+      if (!files || files.length === 0) return;
+
+      for (const file of Array.from(files)) {
+        if (file.size > 10 * 1024 * 1024) { showToast('文件 ' + file.name + ' 超过10MB限制', 'error'); continue; }
+        if (typeof Loading !== 'undefined') Loading.show('上传中...');
+
+        let result = {success:false};
+        // 1. Supabase Storage
+        if (window.SupabaseStorage) {
+          result = await SupabaseStorage.uploadFile(file, 'files');
+        }
+
+        // 2. 回退：本地 Base64
+        if (!result.success) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const fileData = { id: Date.now(), name: file.name, type: file.type, size: file.size, data: e.target.result, uploadTime: new Date().toISOString(), uploader: JSON.parse(sessionStorage.getItem('currentUser')||'{}').username||'未知' };
+            const localFiles = JSON.parse(localStorage.getItem('uploadedFiles')||'[]');
+            localFiles.unshift(fileData); localStorage.setItem('uploadedFiles', JSON.stringify(localFiles));
+            if (typeof Loading !== 'undefined') Loading.hide();
+            showToast(file.name + ' 已保存到本地', 'success');
+            renderFileList();
+          };
+          reader.readAsDataURL(file);
+          continue;
+        }
+
+        // 3. Supabase 成功 → 保存元数据
+        const fileData = { id: Date.now(), name: file.name, type: file.type, size: file.size, url: result.publicUrl, path: result.filePath, uploadTime: new Date().toISOString(), uploader: JSON.parse(sessionStorage.getItem('currentUser')||'{}').username||'未知' };
+        const localFiles = JSON.parse(localStorage.getItem('uploadedFiles')||'[]');
+        localFiles.unshift(fileData); localStorage.setItem('uploadedFiles', JSON.stringify(localFiles));
+        if (typeof Loading !== 'undefined') Loading.hide();
+        showToast(file.name + ' 上传成功', 'success');
+        renderFileList();
+      }
+    }
+
+    // 上传到 Supabase Storage（旧函数，保留兼容）
+    async function uploadToSupabase(fileData) {
+      const supabase = SupabaseClient.getInstance();
+      if (!supabase) return;
+      
+      try {
+        const filePath = `uploads/${Date.now()}_${fileData.name}`;
+        const { data, error } = await supabase.storage
+          .from('documents')
+          .upload(filePath, fileData.data);
+        
+        if (error) {
+          console.warn('⚠️ 上传到云存储失败:', error.message);
+        } else {
+          console.log('✅ 文件已上传到云存储');
+        }
+      } catch (err) {
+        console.warn('⚠️ 云存储上传异常:', err.message);
+      }
+    }
+    
+    // 渲染文件列表
+    function renderFileList() {
+      const fileGrid = document.querySelector('.file-grid');
+      const files = JSON.parse(localStorage.getItem('uploadedFiles') || '[]');
+      
+      if (files.length === 0) {
+        fileGrid.innerHTML = '<p style="text-align:center;color:#9ca3af;padding:40px;">暂无文件</p>';
+        return;
+      }
+      
+      fileGrid.innerHTML = files.map(file => {
+        const iconClass = getFileIcon(file.type);
+        const date = new Date(file.uploadTime).toLocaleDateString('zh-CN');
+        const fileUrl = file.url || file.data || '';
+
+        return `
+          <div class="file-card" data-id="${file.id}" onclick="FileViewer.preview('${fileUrl}','${file.name}')" oncontextmenu="showContextMenu(event, '${file.id}')">
+            <div class="file-icon ${iconClass}">
+              <i class="${iconClass === 'image' ? 'fa-image' : iconClass === 'pdf' ? 'fa-file-pdf' : 'fa-file'}"></i>
+            </div>
+            <p class="file-name">${file.name}</p>
+            <p class="file-date">${date}</p>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // 获取文件图标类型
+    function getFileIcon(mimeType) {
+      if (mimeType.startsWith('image/')) return 'image';
+      if (mimeType === 'application/pdf') return 'pdf';
+      if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return 'excel';
+      if (mimeType.includes('document') || mimeType.includes('word')) return 'word';
+      return 'default';
+    }
+    
+    // 预览文件（使用FileViewer）
+    function previewFile(fileId) {
+      const files = JSON.parse(localStorage.getItem('uploadedFiles') || '[]');
+      const file = files.find(f => f.id == fileId);
+      if (!file) { showToast('文件不存在', 'error'); return; }
+      FileViewer.preview(file.url || file.data, file.name);
+    }
+
+    // 下载文件（使用FileViewer）
+    function downloadFile(fileId) {
+      const files = JSON.parse(localStorage.getItem('uploadedFiles') || '[]');
+      const file = files.find(f => f.id == fileId);
+      if (!file) { showToast('文件不存在', 'error'); return; }
+      FileViewer.download(file.url || file.data, file.name);
+      showToast('正在下载 ' + file.name, 'success');
+    }
+    
+    // 删除文件
+    function deleteFile(fileId) {
+      if (!confirm('确定要删除这个文件吗？')) return;
+      
+      let files = JSON.parse(localStorage.getItem('uploadedFiles') || '[]');
+      files = files.filter(f => f.id != fileId);
+      localStorage.setItem('uploadedFiles', JSON.stringify(files));
+      
+      showToast('文件已删除', 'success');
+      renderFileList();
+    }
+    
+    // 显示右键菜单
+    function showContextMenu(e, fileId) {
+      e.preventDefault();
+      const menu = document.getElementById('contextMenu');
+      
+      // 设置菜单项的点击事件
+      menu.innerHTML = `
+        <div class="menu-item" onclick="downloadFile('${fileId}')">
+          <i class="fas fa-download"></i> 下载
+        </div>
+        <div class="menu-item" onclick="deleteFile('${fileId}')">
+          <i class="fas fa-trash"></i> 删除
+        </div>
+      `;
+      
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.classList.add('active');
+      
+      const closeMenu = (ev) => {
+        if (!menu.contains(ev.target)) {
+          menu.classList.remove('active');
+          document.removeEventListener('click', closeMenu);
+        }
+      };
+      
+      setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+      }, 0);
+    }
+    
+    // 显示提示信息
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 99999;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 2500);
+    }
+    
+    // 通用导航函数
+    function navigateTo(page) {
+      if (window.parent && window.parent !== window) {
+        if (typeof window.parent.navigateTo === 'function') {
+          window.parent.navigateTo(page);
+        } else if (typeof window.parent.loadPage === 'function') {
+          window.parent.loadPage(page);
+        } else {
+          window.parent.postMessage({ type: 'navigate', page: page }, '*');
+        }
+      } else {
+        window.location.href = '../' + page;
+      }
+    }
+    
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      initUpload();
+      renderFileList();
+    });
+    
+    function showContextMenu(e) {
+      e.preventDefault();
+      const menu = document.getElementById('contextMenu');
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.classList.add('active');
+      
+      document.addEventListener('click', function closeMenu() {
+        menu.classList.remove('active');
+        document.removeEventListener('click', closeMenu);
+      });
+    }
+    function openPermissionModal() {
+      document.getElementById('permissionModal').classList.add('active');
+    }
+    function closePermissionModal() {
+      document.getElementById('permissionModal').classList.remove('active');
+    }
+  </script>
+</body>
+</html>

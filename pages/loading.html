@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>装柜管理 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/supabase-storage.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/file-viewer.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+      position: relative;
+    }
+    .back-btn {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .header-content {
+      margin-left: 44px;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .form-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .select-box {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: white;
+    }
+    .select-box:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+      min-height: 100px;
+    }
+    .calculator-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+      color: white;
+    }
+    .calculator-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .calc-item {
+      text-align: center;
+    }
+    .calc-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .calc-label {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 4px;
+    }
+    .scan-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .scan-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .scan-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .scan-count {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .scan-input {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .scan-input input {
+      flex: 1;
+      padding: 14px 16px;
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      font-size: 16px;
+      text-align: center;
+      outline: none;
+    }
+    .scan-input input:focus {
+      border-color: #3b82f6;
+    }
+    .scan-btn {
+      padding: 14px 24px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .add-row-btn {
+      width: 100%;
+      padding: 12px;
+      background: #f9fafb;
+      color: #3b82f6;
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    .add-row-btn:hover {
+      background: #eff6ff;
+    }
+    .btn-section {
+      padding: 0 16px 24px;
+      display: flex;
+      gap: 12px;
+    }
+    .btn-full {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-full.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .upload-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-area:hover {
+      border-color: #3b82f6;
+      background: #f9fafb;
+    }
+    .upload-icon {
+      width: 48px;
+      height: 48px;
+      background: #eff6ff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .upload-icon i {
+      font-size: 24px;
+      color: #3b82f6;
+    }
+    .upload-text {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .file-list {
+      margin-top: 16px;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .file-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .file-icon.image {
+      background: #dbeafe;
+      color: #3b82f6;
+    }
+    .file-info {
+      flex: 1;
+    }
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #1f2937;
+      margin: 0;
+    }
+    .file-size {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="back-btn" onclick="window.parent.loadPage('pages/order-detail.html')">
+      <i class="fas fa-arrow-left"></i>
+    </div>
+    <div class="header-content">
+      <h1 class="header-title">装柜管理</h1>
+      <p class="header-subtitle">PL-2026-0001</p>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h2 class="section-title">装柜信息</h2>
+    
+    <div class="form-group">
+      <label class="form-label">柜型</label>
+      <select class="select-box">
+        <option>20GP (20尺普柜)</option>
+        <option>40GP (40尺普柜)</option>
+        <option>40HQ (40尺高柜)</option>
+        <option>45HQ (45尺高柜)</option>
+      </select>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">体积 (m³)</label>
+        <input type="number" class="form-input" value="28.5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">重量 (kg)</label>
+        <input type="number" class="form-input" value="15600">
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">柜号</label>
+      <input type="text" class="form-input" placeholder="请输入柜号">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">混装方案</label>
+      <textarea class="form-textarea" placeholder="请描述混装方案..."></textarea>
+    </div>
+  </div>
+
+  <div class="calculator-card">
+    <h3 class="calculator-title">装柜计算</h3>
+    <div class="calc-grid">
+      <div class="calc-item">
+        <p class="calc-value">28.5</p>
+        <p class="calc-label">总体积 (m³)</p>
+      </div>
+      <div class="calc-item">
+        <p class="calc-value">15.6</p>
+        <p class="calc-label">总重量 (吨)</p>
+      </div>
+      <div class="calc-item">
+        <p class="calc-value">1</p>
+        <p class="calc-label">柜数</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="scan-section">
+    <div class="scan-header">
+      <h3 class="scan-title">扫描包数</h3>
+      <span class="scan-count" id="scanCount">已扫描: 0 包</span>
+    </div>
+
+    <div class="scan-input">
+      <input type="text" id="scanInput" placeholder="扫描条码或手动输入箱号">
+      <button class="scan-btn" id="scanBtn" onclick="startScanner()"><i class="fas fa-camera"></i> 扫码</button>
+    </div>
+    <div id="scannerView" style="width:100%;max-width:400px;margin:0 auto 8px;display:none;border-radius:8px;overflow:hidden"></div>
+    <div style="text-align:center;margin-bottom:8px">
+      <button id="stopScanBtn" onclick="stopScanner()" style="display:none;padding:6px 16px;background:#ef4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">关闭摄像头</button>
+      <span id="scanStatus" style="font-size:11px;color:#6b7280;margin-left:8px"></span>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr><th>条码/箱号</th><th>时间</th><th>操作</th></tr>
+        </thead>
+        <tbody id="scanTableBody">
+          <tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:16px">等待扫描...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <button class="add-row-btn" onclick="manualAdd()">
+      <i class="fas fa-plus"></i> 手动添加箱号
+    </button>
+  </div>
+
+  <div class="upload-section">
+    <h3 class="section-title">回箱单上传</h3>
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon"><i class="fas fa-camera"></i></div>
+      <p class="upload-text">点击拍照或上传回箱单照片</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*,.pdf" capture="environment" style="display:none" onchange="handleUpload(this.files[0])">
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <div class="btn-section">
+    <button class="btn-full secondary">保存</button>
+    <button class="btn-full primary">
+      <i class="fas fa-file-pdf"></i> 生成装柜指示单
+    </button>
+  </div>
+<script>
+// ===== 条码扫描 =====
+let scannedPackages = [];
+let html5QrCode = null;
+
+async function startScanner() {
+  var scanBtn = document.getElementById('scanBtn');
+  var stopBtn = document.getElementById('stopScanBtn');
+  var viewer = document.getElementById('scannerView');
+  var status = document.getElementById('scanStatus');
+
+  if (!window.Html5Qrcode) {
+    // 没有摄像头，手动输入模式
+    manualAdd();
+    return;
+  }
+
+  try {
+    viewer.style.display = 'block';
+    scanBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-block';
+    status.textContent = '正在启动摄像头...';
+
+    html5QrCode = new Html5Qrcode('scannerView');
+    await html5QrCode.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      function(decodedText) {
+        addScannedPackage(decodedText);
+        status.textContent = '已扫描: ' + decodedText;
+        // 短暂提示后继续扫描
+        setTimeout(function() { status.textContent = '继续扫描...'; }, 1500);
+      },
+      function() { /* ignore errors */ }
+    );
+    status.textContent = '请对准条码/二维码...';
+  } catch(e) {
+    viewer.style.display = 'none';
+    scanBtn.style.display = '';
+    stopBtn.style.display = 'none';
+    status.textContent = '摄像头不可用：' + e.message + '（可手动输入）';
+    console.warn('Camera error:', e.message);
+  }
+}
+
+async function stopScanner() {
+  if (html5QrCode) {
+    try { await html5QrCode.stop(); } catch(e) {}
+    html5QrCode = null;
+  }
+  document.getElementById('scannerView').style.display = 'none';
+  document.getElementById('scanBtn').style.display = '';
+  document.getElementById('stopScanBtn').style.display = 'none';
+  document.getElementById('scanStatus').textContent = '';
+}
+
+function addScannedPackage(code) {
+  if (scannedPackages.find(function(p) { return p.code === code; })) {
+    // 重复扫描
+    return;
+  }
+  scannedPackages.push({
+    code: code,
+    time: new Date().toLocaleTimeString()
+  });
+  renderScanTable();
+}
+
+function manualAdd() {
+  var input = document.getElementById('scanInput');
+  var code = input.value.trim();
+  if (!code) {
+    if (typeof Toast !== 'undefined') Toast.warning('请输入箱号或条码');
+    else alert('请输入箱号或条码');
+    return;
+  }
+  addScannedPackage(code);
+  input.value = '';
+  input.focus();
+  if (typeof Toast !== 'undefined') Toast.success('已添加: ' + code);
+}
+
+function renderScanTable() {
+  var tbody = document.getElementById('scanTableBody');
+  var countEl = document.getElementById('scanCount');
+  countEl.textContent = '已扫描: ' + scannedPackages.length + ' 包';
+
+  if (scannedPackages.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:16px">等待扫描...</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = scannedPackages.map(function(p, i) {
+    return '<tr><td>' + p.code + '</td><td>' + p.time + '</td><td><button onclick="removePackage(' + i + ')" style="border:none;background:#fee2e2;color:#ef4444;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:11px"><i class="fas fa-trash"></i> 删除</button></td></tr>';
+  }).join('');
+}
+
+function removePackage(index) {
+  scannedPackages.splice(index, 1);
+  renderScanTable();
+}
+
+// 回车键手动添加
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('scanInput');
+  if (input) {
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') manualAdd();
+    });
+  }
+});
+
+// ===== 文件上传 =====
+let uploadedFiles = [];
+async function handleUpload(file) {
+  if (!file) return;
+  if (typeof Loading !== 'undefined') Loading.show('上传中...');
+  let result = {success:false};
+  if (window.SupabaseStorage) result = await SupabaseStorage.uploadFile(file, 'loading');
+  if (!result.success) {
+    const reader = new FileReader();
+    reader.onload = (e) => { uploadedFiles.push({name:file.name,url:e.target.result,size:file.size}); renderFiles(); if(typeof Loading!=='undefined') Loading.hide(); };
+    reader.readAsDataURL(file);
+    return;
+  }
+  uploadedFiles.push({name:file.name,url:result.publicUrl,size:file.size,path:result.filePath});
+  renderFiles();
+  if (typeof Loading !== 'undefined') Loading.hide();
+  if (typeof Toast !== 'undefined') Toast.success('回箱单上传成功');
+}
+function renderFiles() {
+  const el = document.getElementById('fileList');
+  if (!el) return;
+  el.innerHTML = uploadedFiles.map((f,i) => '<div class="file-item"><div class="file-icon image" onclick="FileViewer.preview(\''+f.url+'\',\''+f.name+'\')"><i class="fas fa-image"></i></div><div class="file-info" onclick="FileViewer.preview(\''+f.url+'\',\''+f.name+'\')"><p class="file-name">'+f.name+'</p><p class="file-size">'+(f.size/1024).toFixed(1)+' KB</p></div><div style="display:flex;gap:6px">'+FileViewer.renderFileActions(f.url,f.name)+'<button onclick="event.stopPropagation();deleteFile('+i+')" title="删除" style="border:none;background:#fee2e2;color:#ef4444;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:13px"><i class="fas fa-trash"></i></button></div></div>').join('');
+}
+
+function deleteFile(index) {
+  const file = uploadedFiles[index];
+  if (!file) return;
+  if (!confirm('确定删除「' + file.name + '」？')) return;
+  if (file.path && window.supabase && window.supabase.storage) {
+    window.supabase.storage.from('documents').remove([file.path]).catch(function(){});
+  }
+  uploadedFiles.splice(index, 1);
+  renderFiles();
+  if (typeof Toast !== 'undefined') Toast.success('已删除');
+  // 离开页面时关闭摄像头
+  window.addEventListener('beforeunload', function() {
+    if (html5QrCode) { try { html5QrCode.stop(); } catch(e) {} }
+  });
+}
+</script>
+</body>
+</html>

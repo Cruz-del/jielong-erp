@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>回款核销 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/supabase-config.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/supabase-storage.js"></script>
+  <script src="../js/data-service.js"></script>
+  <script src="../js/file-viewer.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+      position: relative;
+    }
+    .back-btn {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .header-content {
+      margin-left: 44px;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .form-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 20px 0;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #4b5563;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .select-box {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: white;
+    }
+    .select-box:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    .upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-area:hover {
+      border-color: #3b82f6;
+      background: #f9fafb;
+    }
+    .upload-icon {
+      width: 48px;
+      height: 48px;
+      background: #eff6ff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .upload-icon i {
+      font-size: 24px;
+      color: #3b82f6;
+    }
+    .upload-text {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .ocr-tip {
+      font-size: 12px;
+      color: #3b82f6;
+      margin-top: 8px;
+    }
+    .orders-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .orders-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .orders-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .orders-hint {
+      font-size: 12px;
+      color: #3b82f6;
+    }
+    .order-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .order-item {
+      background: #f9fafb;
+      border-radius: 10px;
+      padding: 14px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .order-item.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .order-item:hover {
+      background: #f3f4f6;
+    }
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .order-number {
+      font-size: 14px;
+      font-weight: 600;
+      color: #3b82f6;
+    }
+    .order-customer {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .order-info {
+      display: flex;
+      justify-content: space-between;
+    }
+    .order-amount {
+      font-size: 15px;
+      font-weight: 600;
+      color: #dc2626;
+    }
+    .order-age {
+      font-size: 12px;
+      color: #f59e0b;
+    }
+    .allocation-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .allocation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .allocation-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .allocation-total {
+      font-size: 16px;
+      font-weight: 700;
+      color: #10b981;
+    }
+    .allocation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .allocation-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+    .allocation-order {
+      font-size: 13px;
+      font-weight: 500;
+      color: #3b82f6;
+    }
+    .allocation-input {
+      width: 100px;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: right;
+    }
+    .btn-section {
+      padding: 0 16px 24px;
+    }
+    .btn-full {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-full.primary {
+      background: #3b82f6;
+      color: white;
+    }
+    .btn-full.secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+    }
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: #dcfce7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .success-icon i {
+      font-size: 32px;
+      color: #16a34a;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 8px 0;
+    }
+    .modal-desc {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0 0 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="back-btn" onclick="window.parent.loadPage('pages/finance-reconcile.html')">
+      <i class="fas fa-arrow-left"></i>
+    </div>
+    <div class="header-content">
+      <h1 class="header-title">回款核销</h1>
+      <p class="header-subtitle">录入回款并分配核销</p>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h2 class="section-title">回款信息</h2>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">实收金额</label>
+        <input type="text" class="form-input" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">币种</label>
+        <select class="select-box">
+          <option>USD</option>
+          <option>CNY</option>
+          <option>EUR</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">水单日期</label>
+        <input type="date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">水单编号</label>
+        <input type="text" class="form-input" placeholder="请输入水单编号">
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">水单文件</label>
+      <div class="upload-area">
+        <div class="upload-icon">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <p class="upload-text">点击或拖拽上传水单图片</p>
+        <p class="ocr-tip"><i class="fas fa-magic"></i> 支持OCR自动识别金额和日期</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="orders-section">
+    <div class="orders-header">
+      <p class="orders-title">待核销订单</p>
+      <span class="orders-hint">点击选择订单</span>
+    </div>
+    <div class="order-list">
+      <div class="order-item selected">
+        <div class="order-header">
+          <span class="order-number">PL-2026-0001</span>
+          <span class="order-age">逾期95天</span>
+        </div>
+        <p class="order-customer">ABC Trading</p>
+        <div class="order-info">
+          <span class="order-amount">$50,000</span>
+        </div>
+      </div>
+      <div class="order-item">
+        <div class="order-header">
+          <span class="order-number">PL-2026-0005</span>
+          <span class="order-age">逾期30天</span>
+        </div>
+        <p class="order-customer">ABC Trading</p>
+        <div class="order-info">
+          <span class="order-amount">$30,000</span>
+        </div>
+      </div>
+      <div class="order-item">
+        <div class="order-header">
+          <span class="order-number">PL-2026-0012</span>
+          <span class="order-age">正常</span>
+        </div>
+        <p class="order-customer">ABC Trading</p>
+        <div class="order-info">
+          <span class="order-amount">$25,000</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="allocation-section">
+    <div class="allocation-header">
+      <p class="allocation-title">金额分配</p>
+      <span class="allocation-total">$50,000</span>
+    </div>
+    <div class="allocation-list">
+      <div class="allocation-item">
+        <span class="allocation-order">PL-2026-0001</span>
+        <input type="text" class="allocation-input" value="50000">
+      </div>
+      <div class="allocation-item">
+        <span class="allocation-order">PL-2026-0005</span>
+        <input type="text" class="allocation-input" value="0">
+      </div>
+      <div class="allocation-item">
+        <span class="allocation-order">PL-2026-0012</span>
+        <input type="text" class="allocation-input" value="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-section">
+    <button class="btn-full secondary">保存草稿</button>
+    <button class="btn-full primary" onclick="openSuccessModal()">
+      <i class="fas fa-check-circle"></i> 确认核销
+    </button>
+  </div>
+
+  <div class="modal" id="successModal">
+    <div class="modal-content">
+      <div class="success-icon">
+        <i class="fas fa-check"></i>
+      </div>
+      <h3 class="modal-title">核销成功</h3>
+      <p class="modal-desc">回款已成功录入并分配核销，应收账款看板已更新</p>
+      <button class="btn-full primary" onclick="closeSuccessModal()">
+        完成
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 初始化水单上传
+    function initWaterUpload() {
+      const uploadArea = document.querySelector('.upload-area');
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*,.pdf';
+      fileInput.style.display = 'none';
+      document.body.appendChild(fileInput);
+      
+      uploadArea.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => handleWaterUpload(e.target.files[0]));
+      
+      // 拖拽上传
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#3b82f6';
+        uploadArea.style.background = '#f0f9ff';
+      });
+      uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#d1d5db';
+        uploadArea.style.background = '';
+      });
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#d1d5db';
+        uploadArea.style.background = '';
+        if (e.dataTransfer.files[0]) {
+          handleWaterUpload(e.dataTransfer.files[0]);
+        }
+      });
+    }
+    
+    // 处理水单上传 → Supabase Storage
+    async function handleWaterUpload(file) {
+      if (!file) return;
+      if (typeof Loading !== 'undefined') Loading.show('上传水单...');
+
+      let result = { success: false };
+      // 优先 Supabase
+      if (window.SupabaseStorage) {
+        result = await SupabaseStorage.uploadFile(file, 'payments');
+      }
+      // 回退本地
+      if (!result.success) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const waterData = { fileName: file.name, fileData: e.target.result, uploadTime: new Date().toISOString() };
+          localStorage.setItem('currentWaterSlip', JSON.stringify(waterData));
+          updateUploadUI(file);
+          if (typeof Loading !== 'undefined') Loading.hide();
+          if (typeof Toast !== 'undefined') Toast.success('水单已保存（本地）');
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // Supabase 上传成功 → 保存元数据
+      if (window.DataService) {
+        const orderId = new URLSearchParams(location.search).get('orderId');
+        if (orderId) {
+          await DataService.files.attachToOrder(orderId, {
+            file_name: file.name, file_path: result.filePath,
+            file_type: 'invoice', file_size: file.size, public_url: result.publicUrl
+          }).catch(() => {});
+        }
+      }
+      updateUploadUI(file);
+      if (typeof Loading !== 'undefined') Loading.hide();
+      if (typeof Toast !== 'undefined') Toast.success('水单上传成功');
+    }
+
+    function updateUploadUI(file) {
+      const uploadArea = document.querySelector('.upload-area');
+      if (uploadArea) {
+        const slipData = JSON.parse(localStorage.getItem('currentWaterSlip') || '{}');
+        const url = slipData.publicUrl || slipData.fileData || '';
+        uploadArea.innerHTML = `
+          <div class="upload-icon" style="background:#dcfce7;">
+            <i class="fas fa-check-circle" style="color:#16a34a;"></i>
+          </div>
+          <p class="upload-text" style="color:#16a34a;">${file.name}</p>
+          <p class="ocr-tip"><i class="fas fa-check"></i> 水单已上传</p>
+          <div style="margin-top:8px;display:flex;gap:8px;justify-content:center">
+            ${FileViewer.renderFileActions(url, file.name)}
+          </div>
+        `;
+      }
+    }
+    
+    // 保存回款记录
+    function savePayment() {
+      const amount = document.getElementById('amount')?.value;
+      const date = document.getElementById('date')?.value;
+      const customer = document.getElementById('customer')?.value;
+      const remark = document.getElementById('remark')?.value;
+      const waterData = JSON.parse(localStorage.getItem('currentWaterSlip') || '{}');
+      
+      if (!amount || !date) {
+        showToast('请填写金额和日期', 'warning');
+        return;
+      }
+      
+      const record = {
+        id: Date.now(),
+        orderId: localStorage.getItem('currentOrderId') || '',
+        customer: customer,
+        amount: parseFloat(amount),
+        date: date,
+        remark: remark,
+        waterSlip: waterData.fileName || null,
+        waterSlipData: waterData.fileData || null,
+        status: '已确认',
+        createdAt: new Date().toISOString()
+      };
+      
+      // 保存到 localStorage
+      const payments = JSON.parse(localStorage.getItem('paymentRecords') || '[]');
+      payments.unshift(record);
+      localStorage.setItem('paymentRecords', JSON.stringify(payments));
+      
+      // 清除临时水单数据
+      localStorage.removeItem('currentWaterSlip');
+      
+      showToast('保存成功！', 'success');
+      
+      // 2秒后跳转
+      setTimeout(() => {
+        closeSuccessModal();
+      }, 2000);
+    }
+    
+    // 显示提示
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        z-index: 99999;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
+    
+    function openSuccessModal() {
+      document.getElementById('successModal').classList.add('active');
+    }
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.remove('active');
+      window.parent.loadPage('pages/finance-ar.html');
+    }
+    
+    document.addEventListener('DOMContentLoaded', initWaterUpload);
+  </script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1e3a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="捷隆纺织">
+  <meta name="application-name" content="捷隆纺织">
+  <meta name="msapplication-TileColor" content="#1e3a5f">
+  <title>捷隆纺织 - 订单管理系统</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  
+  <!-- Supabase 配置 -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  
+  <!-- 全局工具 -->
+  <script src="js/components.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/accessibility.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/permissions.js"></script>
+  <script src="js/data-service.js"></script>
+  <script src="js/data-sync.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      width: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f7;
+      overflow: hidden;
+    }
+    
+    #app-container {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .status-bar {
+      height: var(--status-bar-height, 44px);
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      flex-shrink: 0;
+    }
+    
+    .main-content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .main-content iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    
+    .bottom-nav {
+      height: 60px;
+      background: white;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      flex-shrink: 0;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #6b7280;
+      transition: all 0.2s;
+      min-width: 60px;
+      cursor: pointer;
+    }
+    
+    .nav-item.active, .nav-item:active {
+      color: #3b82f6;
+    }
+    
+    .nav-item i {
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+    
+    .nav-item span {
+      font-size: 10px;
+    }
+    
+    /* 加载状态 */
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(245, 245, 247, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      font-size: 14px;
+      color: #6b7280;
+    }
+    
+    /* Toast 通知 */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 20px;
+      font-size: 14px;
+      z-index: 2000;
+      animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    
+    /* 安全区域适配 */
+    .safe-area-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    /* 触摸优化 */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* 隐藏底部导航的页面 */
+    .hide-nav #bottomNav {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app-container">
+    <!-- 状态栏 -->
+    <div class="status-bar"></div>
+    
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <iframe id="mainFrame" src="pages/login.html"></iframe>
+      
+      <!-- 加载遮罩 -->
+      <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">加载中...</div>
+      </div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div id="bottomNav" class="bottom-nav" style="display: none;">
+      <!-- 底部导航由 buildMobileNav() 动态生成 -->
+    </div>
+  </div>
+
+  <script>
+    // 全局状态
+    let currentPage = 'pages/login.html';
+    let pageHistory = [];
+    
+    // 初始化 Supabase
+    const config = window.SupabaseConfig || {
+      URL: 'https://uujlzxidillcvqjxmqnj.supabase.co',
+      API_KEY: 'sb_publishable_x0Do8yWb3XA5Asr1x0Bd7Q_HfDMgIl6'
+    };
+    
+    window.supabase = window.supabase.createClient(config.URL, config.API_KEY, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    });
+    
+    console.log('✅ 捷隆纺织 APP 已初始化');
+    
+    // 检查登录状态
+    function checkLoginStatus() {
+      return localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('currentUser');
+    }
+    
+    // 导航到页面
+    // 需要登录才能访问的页面列表
+    const protectedPages = [
+      'pages/dashboard.html',
+      'pages/finance-ar.html',
+      'pages/ai-chat.html',
+      'pages/notifications.html',
+      'pages/settings.html',
+      'pages/design-production.html',
+      'pages/order-detail.html',
+      'pages/help.html',
+      'pages/history.html',
+      'pages/about.html',
+      'pages/finance.html'
+    ];
+    
+    // 路由守卫：检查登录状态
+    function requireAuth(pageUrl) {
+      const isProtected = protectedPages.some(page => pageUrl.includes(page) || page.includes(pageUrl));
+      if (isProtected && !checkLoginStatus()) {
+        showToast('请先登录', 'warning');
+        return false;
+      }
+      return true;
+    }
+    
+    function navigateTo(pageUrl) {
+      // 路由守卫检查
+      if (!requireAuth(pageUrl)) {
+        currentPage = 'pages/login.html';
+        document.getElementById('mainFrame').src = 'pages/login.html';
+        document.getElementById('bottomNav').style.display = 'none';
+        return;
+      }
+      
+      // 避免重复加载
+      if (currentPage === pageUrl) return;
+      
+      // 保存历史
+      pageHistory.push(currentPage);
+      if (pageHistory.length > 10) pageHistory.shift();
+      
+      // 显示加载状态
+      showLoading();
+      
+      // 更新导航状态
+      updateNavigation(pageUrl);
+      
+      // 加载页面
+      const iframe = document.getElementById('mainFrame');
+      iframe.src = pageUrl;
+      currentPage = pageUrl;
+    }
+    
+    // 返回上一页
+    function goBack() {
+      if (pageHistory.length > 0) {
+        const prevPage = pageHistory.pop();
+        navigateTo(prevPage);
+      }
+    }
+    
+    // 更新导航状态
+    function updateNavigation(pageUrl) {
+      // 更新底部导航高亮
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        const page = item.getAttribute('data-page');
+        if (page && pageUrl.includes(page)) {
+          item.classList.add('active');
+        }
+      });
+      
+      // 控制底部导航显示/隐藏
+      const hideNavPages = ['pages/login.html', 'pages/design-production.html'];
+      const bottomNav = document.getElementById('bottomNav');
+      if (hideNavPages.includes(pageUrl)) {
+        bottomNav.style.display = 'none';
+      } else if (checkLoginStatus()) {
+        bottomNav.style.display = 'flex';
+      }
+    }
+    
+    // 显示加载状态
+    function showLoading(message = '加载中...') {
+      const overlay = document.getElementById('loadingOverlay');
+      overlay.querySelector('.loading-text').textContent = message;
+      overlay.style.display = 'flex';
+    }
+    
+    // 隐藏加载状态
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+    
+    // 显示 Toast 通知
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      
+      // 根据类型设置背景色
+      if (type === 'success') toast.style.background = 'rgba(16, 185, 129, 0.9)';
+      if (type === 'error') toast.style.background = 'rgba(239, 68, 68, 0.9)';
+      if (type === 'warning') toast.style.background = 'rgba(245, 158, 11, 0.9)';
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 2500);
+    }
+    
+    // 页面加载完成处理
+    document.getElementById('mainFrame').addEventListener('load', function() {
+      hideLoading();
+      
+      // 通知子页面
+      try {
+        this.contentWindow.postMessage({
+          type: 'appReady',
+          isLoggedIn: checkLoginStatus()
+        }, '*');
+      } catch (e) {
+        console.warn('通知子页面失败:', e);
+      }
+    });
+    
+    // 监听子页面消息
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'loginSuccess') {
+        console.log('✅ 登录成功');
+        showToast('登录成功！欢迎回来', 'success');
+        document.getElementById('bottomNav').style.display = 'flex';
+        navigateTo('pages/dashboard.html');
+      }
+      
+      if (event.data && event.data.type === 'logout') {
+        console.log('🔓 退出登录');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('currentUser');
+        document.getElementById('bottomNav').style.display = 'none';
+        navigateTo('pages/login.html');
+      }
+      
+      if (event.data && event.data.type === 'navigate') {
+        navigateTo(event.data.page);
+      }
+    });
+    
+    // 底部导航Tab定义
+    var ALL_TABS = [
+      { key:'工作台', icon:'fa-clipboard-list', label:'工作台', page:'pages/dashboard.html' },
+      { key:'物流单证', icon:'fa-ship', label:'物流单证', page:'pages/cat-logistics.html' },
+      { key:'财务', icon:'fa-chart-bar', label:'财务', page:'pages/cat-finance.html' },
+      { key:'AI助手', icon:'fa-robot', label:'AI助手', page:'pages/cat-ai.html' },
+      { key:'驾驶舱', icon:'fa-tachometer-alt', label:'驾驶舱', page:'pages/cat-boss.html' },
+      { key:'管理', icon:'fa-cog', label:'管理', page:'pages/cat-admin.html' }
+    ];
+
+    function buildMobileNav() {
+      var bar = document.getElementById('bottomNav');
+      if (!bar) return;
+      bar.innerHTML = ALL_TABS.filter(function(tab) {
+        return !window.Permission || Permission.canSeeTab(tab.key);
+      }).map(function(tab) {
+        return '<div class="nav-item" data-page="' + tab.key + '" onclick="navigateTo(\'' + tab.page + '\')"><i class="fas ' + tab.icon + '"></i><span>' + tab.label + '</span></div>';
+      }).join('');
+    }
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      if (checkLoginStatus()) {
+        buildMobileNav();
+        document.getElementById('bottomNav').style.display = 'flex';
+        setTimeout(function() { navigateTo('pages/dashboard.html'); }, 100);
+      } else {
+        navigateTo('pages/login.html');
+      }
+    });
+    
+    // 暴露全局方法供子页面调用
+    window.navigateTo = navigateTo;
+    window.goBack = goBack;
+    window.showToast = showToast;
+    window.showLoading = showLoading;
+    window.hideLoading = hideLoading;
+  </script>
+</body>
+</html>

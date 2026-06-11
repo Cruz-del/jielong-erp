@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>操作日志审计 - 捷隆纺织</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="../js/page-guard.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/state.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/supabase-client.js"></script>
+  <script src="../js/data-service.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      padding: 20px 16px;
+      color: white;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .header-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .filter-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .filter-item {
+      flex: 1;
+      min-width: 140px;
+    }
+    .filter-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .filter-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+    }
+    .filter-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    .action-bar {
+      background: white;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .action-btn {
+      padding: 8px 14px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .table-section {
+      background: white;
+      margin: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 16px;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .table-info {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #6b7280;
+    }
+    .data-table td {
+      color: #374151;
+    }
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+    .action-type {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .action-type.create {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .action-type.edit {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+    .action-type.delete {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .action-type.export {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    .detail-link {
+      color: #3b82f6;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .detail-link:hover {
+      text-decoration: underline;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .json-preview {
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 16px;
+      border-radius: 10px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .btn-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+    .btn-full {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: #3b82f6;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="header-title">操作日志审计</h1>
+    <p class="header-subtitle">安全审计与操作追踪</p>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-item">
+      <label class="filter-label">用户</label>
+      <select class="filter-select">
+        <option>全部用户</option>
+        <option>zhangsan</option>
+        <option>lisi</option>
+        <option>wangwu</option>
+      </select>
+    </div>
+    <div class="filter-item">
+      <label class="filter-label">操作类型</label>
+      <select class="filter-select">
+        <option>全部类型</option>
+        <option>创建</option>
+        <option>编辑</option>
+        <option>删除</option>
+        <option>导出</option>
+      </select>
+    </div>
+    <div class="filter-item">
+      <label class="filter-label">日期范围</label>
+      <input type="text" class="filter-input" placeholder="2026-06-01 ~ 2026-06-07">
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="action-btn">
+      <i class="fas fa-download"></i> 导出日志
+    </button>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <p class="table-title">操作日志</p>
+      <span class="table-info">共 156 条记录</span>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>用户</th>
+            <th>操作类型</th>
+            <th>IP地址</th>
+            <th>详情</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2026-06-07 10:30:15</td>
+            <td>zhangsan</td>
+            <td><span class="action-type edit">编辑</span></td>
+            <td>192.168.1.100</td>
+            <td><span class="detail-link" onclick="openDetailModal()">查看详情</span></td>
+          </tr>
+          <tr>
+            <td>2026-06-07 09:45:32</td>
+            <td>lisi</td>
+            <td><span class="action-type export">导出</span></td>
+            <td>192.168.1.101</td>
+            <td><span class="detail-link" onclick="openDetailModal()">查看详情</span></td>
+          </tr>
+          <tr>
+            <td>2026-06-07 08:20:45</td>
+            <td>wangwu</td>
+            <td><span class="action-type create">创建</span></td>
+            <td>192.168.1.102</td>
+            <td><span class="detail-link" onclick="openDetailModal()">查看详情</span></td>
+          </tr>
+          <tr>
+            <td>2026-06-06 16:30:00</td>
+            <td>zhangsan</td>
+            <td><span class="action-type delete">删除</span></td>
+            <td>192.168.1.100</td>
+            <td><span class="detail-link" onclick="openDetailModal()">查看详情</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal" id="detailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">操作详情</h3>
+        <div class="close-btn" onclick="closeDetailModal()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div class="json-preview">
+{
+  "id": "log-001",
+  "user": "zhangsan",
+  "action": "编辑",
+  "module": "订单管理",
+  "target": "PL-2026-0001",
+  "ip": "192.168.1.100",
+  "timestamp": "2026-06-07 10:30:15",
+  "before": {
+    "status": "进行中",
+    "step": "生产"
+  },
+  "after": {
+    "status": "进行中",
+    "step": "装箱"
+  }
+}
+      </div>
+      <div class="btn-section">
+        <button class="btn-full" onclick="closeDetailModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openDetailModal() { document.getElementById('detailModal').classList.add('active'); }
+    function closeDetailModal() { document.getElementById('detailModal').classList.remove('active'); }
+
+    async function loadLogs() {
+      var tbody = document.querySelector('.data-table tbody');
+      if (window.DataService) {
+        try {
+          var { data } = await DataService.logs.list(50);
+          if (data && data.length > 0) {
+            tbody.innerHTML = data.map(function(l) {
+              var user = l.user ? l.user.name : (l.user_id || '系统');
+              return '<tr><td>' + new Date(l.created_at).toLocaleString() + '</td><td>' + (user||'—') + '</td><td>' + (l.action||'') + '</td><td>' + (l.target_type||'') + '</td><td>' + (l.target_id||'').substring(0,8) + '</td></tr>';
+            }).join('');
+            return;
+          }
+        } catch(e) { console.warn('Logs:', e.message); }
+      }
+      // 本地回退
+      var local = JSON.parse(localStorage.getItem('operationLogs') || '[]');
+      tbody.innerHTML = local.length > 0 ? local.map(function(l) {
+        return '<tr><td>' + (l.timestamp||'').substring(0,16) + '</td><td>' + (l.operator||'') + '</td><td>' + (l.title||'') + '</td><td>' + (l.category||'') + '</td><td>' + (l.description||'') + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:20px">暂无操作日志</td></tr>';
+    }
+
+    document.addEventListener('DOMContentLoaded', loadLogs);
+  </script>
+</body>
+</html>
