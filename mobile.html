@@ -396,14 +396,15 @@
       }).join('');
     }
 
-    // 页面初始化
+    // 页面初始化——先显示官网首页
     document.addEventListener('DOMContentLoaded', function() {
       if (checkLoginStatus()) {
         buildMobileNav();
         document.getElementById('bottomNav').style.display = 'flex';
         setTimeout(function() { navigateTo('pages/dashboard.html'); }, 100);
       } else {
-        navigateTo('pages/login.html');
+        // 未登录：显示官网首页（和桌面版一样）
+        navigateTo('pages/index.html');
       }
     });
     
