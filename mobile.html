@@ -225,6 +225,30 @@
     function checkLoginStatus() {
       return localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('currentUser');
     }
+
+    function doLoginRedirect(userInfo) {
+      if (userInfo) {
+        sessionStorage.setItem('currentUser', JSON.stringify(userInfo));
+        sessionStorage.setItem('isLoggedIn', 'true');
+      }
+      showToast('登录成功！欢迎回来', 'success');
+      buildMobileNav();
+      document.getElementById('bottomNav').style.display = 'flex';
+      var iframe = document.getElementById('mainFrame');
+      iframe.src = 'pages/dashboard.html';
+      currentPage = 'pages/dashboard.html';
+    }
+
+    // 备用：监听 localStorage 变化（postMessage 失败时的回退方案）
+    var lastLoginCheck = localStorage.getItem('loginTime') || '';
+    setInterval(function() {
+      var current = localStorage.getItem('loginTime') || '';
+      if (current !== lastLoginCheck && checkLoginStatus()) {
+        lastLoginCheck = current;
+        var user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        doLoginRedirect(user);
+      }
+    }, 1000);
     
     // 导航到页面
     // 需要登录才能访问的页面列表
@@ -357,19 +381,8 @@
     // 监听子页面消息
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'loginSuccess') {
-        console.log('✅ 登录成功');
-        // 保存用户信息到父窗口 sessionStorage
-        if (event.data.user) {
-          sessionStorage.setItem('currentUser', JSON.stringify(event.data.user));
-          sessionStorage.setItem('isLoggedIn', 'true');
-        }
-        showToast('登录成功！欢迎回来', 'success');
-        buildMobileNav();
-        document.getElementById('bottomNav').style.display = 'flex';
-        // 直接加载仪表盘，不走 requireAuth
-        var iframe = document.getElementById('mainFrame');
-        iframe.src = 'pages/dashboard.html';
-        currentPage = 'pages/dashboard.html';
+        console.log('✅ 登录成功(postMessage)');
+        doLoginRedirect(event.data.user);
       }
       
       if (event.data && event.data.type === 'logout') {
