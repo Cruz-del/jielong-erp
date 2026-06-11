@@ -657,12 +657,14 @@
       localStorage.setItem('loginTime', Date.now().toString());
       hideError();
 
-      // 刷新整个页面——让 mobile.html 检测到登录状态自动进仪表盘
-      if (window.parent && window.parent !== window) {
-        window.parent.location.reload();
-      } else {
-        location.href = '../mobile.html';
-      }
+      // 先确保数据写入完成，再刷新父窗口
+      setTimeout(function() {
+        if (window.parent && window.parent !== window) {
+          window.parent.location.reload();
+        } else {
+          location.href = '../mobile.html';
+        }
+      }, 500);
     }
 
     // 处理注册
