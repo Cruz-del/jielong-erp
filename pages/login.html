@@ -661,8 +661,14 @@
       localStorage.setItem('loginTime', Date.now().toString());
       hideError();
 
-      // 直接跳转仪表盘
-      location.replace('dashboard.html');
+      // 通知父窗口 + 跳转仪表盘
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'loginSuccess', user: info }, '*');
+        }
+      } catch(e) {}
+      // 延迟跳转，让父窗口有时间处理
+      setTimeout(function() { location.replace('dashboard.html'); }, 300);
     }
 
     // 处理注册
@@ -711,12 +717,12 @@
     }
 
     function showRegister() {
-      document.querySelector('.login-container:first-child').style.display = 'none';
+      document.getElementById('loginForm').parentElement.style.display = 'none';
       document.getElementById('registerForm').style.display = 'block';
     }
 
     function showLogin() {
-      document.querySelector('.login-container:first-child').style.display = 'block';
+      document.getElementById('loginForm').parentElement.style.display = 'block';
       document.getElementById('registerForm').style.display = 'none';
     }
   </script>
