@@ -473,7 +473,7 @@
         <i class="fas fa-exclamation-circle"></i> 账号或密码错误
       </div>
 
-      <form id="loginForm" onsubmit="handleLogin(event)">
+      <form id="loginForm">
         <div class="form-group">
           <label class="form-label">账号</label>
           <input type="text" class="form-input" id="username" placeholder="请输入账号">
@@ -492,7 +492,7 @@
           <span class="forgot-link">忘记密码?</span>
         </div>
 
-        <button type="submit" class="login-btn">登录</button>
+        <button type="button" class="login-btn" onclick="handleLogin(event)">登录</button>
       </form>
 
       <!-- 测试账号信息 -->
@@ -537,7 +537,7 @@
       <i class="fas fa-exclamation-circle"></i> 注册失败
     </div>
 
-    <form id="registerFormData" onsubmit="handleRegister(event)">
+    <form id="registerFormData">
       <div class="form-group">
         <label class="form-label">姓名</label>
         <input type="text" class="form-input" id="registerName" placeholder="请输入姓名">
@@ -564,7 +564,7 @@
         <input type="password" class="form-input" id="registerConfirmPassword" placeholder="请再次输入密码">
       </div>
 
-      <button type="submit" class="login-btn">注册</button>
+      <button type="button" class="login-btn" onclick="handleRegister()">注册</button>
     </form>
 
     <div class="register-link">
@@ -631,9 +631,7 @@
     }
 
     // 处理登录（纯本地验证）
-    function handleLogin(event) {
-      event.preventDefault();
-
+    function handleLogin() {
       var username = document.getElementById('username').value.trim();
       var password = document.getElementById('password').value.trim();
 
@@ -654,9 +652,7 @@
     }
 
     // 处理注册
-    function handleRegister(event) {
-      event.preventDefault();
-
+    function handleRegister() {
       var name = document.getElementById('registerName').value.trim();
       var email = document.getElementById('registerEmail').value.trim();
       var phone = document.getElementById('registerPhone').value.trim();
